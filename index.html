@@ -684,5 +684,79 @@ if('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).catch(e
   ensure();setTimeout(ensure,80);setTimeout(ensure,350);setTimeout(ensure,900);
 })();
 </script>
+  <style>
+/* ГВОЗДЬ: Врата не занимают места, когда не активны (перебивает #gate{display:grid}) */
+#gate:not(.active){display:none !important;}
+</style>
+<script>
+(function gateNail(){
+  function killGate(){
+    var g=document.getElementById('gate');
+    if(!g) return;
+    g.classList.remove('active');
+    g.style.setProperty('display','none','important');
+  }
+  function top0(){
+    window.scrollTo(0,0);
+    requestAnimationFrame(function(){window.scrollTo(0,0);});
+    setTimeout(function(){window.scrollTo(0,0);},60);
+    setTimeout(function(){window.scrollTo(0,0);},300);
+  }
+  function sync(){
+    var app=document.getElementById('app');
+    if(app && app.classList.contains('active')){ killGate(); top0(); }
+  }
+  /* авто-вход уже открыл приложение к этому моменту — чиним сверху */
+  sync(); setTimeout(sync,100); setTimeout(sync,400); setTimeout(sync,1000);
+
+  /* ручной вход: ловим кнопку РАНЬШЕ старого кода */
+  document.addEventListener('click',function(e){
+    var t=e.target;
+    while(t && t!==document){ if(t.id==='enter') break; t=t.parentNode; }
+    if(!t || t.id!=='enter') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var n=document.getElementById('f-name').value.trim();
+    var c=document.getElementById('f-code').value.trim();
+    var msg=document.getElementById('gate-msg'); msg.textContent='';
+    if(!n){document.getElementById('fld-name').classList.add('err');setTimeout(function(){document.getElementById('fld-name').classList.remove('err');},450);msg.textContent='Назови себя, путник.';return;}
+    if(!c){document.getElementById('fld-code').classList.add('err');setTimeout(function(){document.getElementById('fld-code').classList.remove('err');},450);msg.textContent='Предъяви код-приглашение.';return;}
+    var m=findMember(n);
+    if(m){
+      if(m.status==='Отстранён'){msg.textContent='Врата закрыты: допуск приостановлен Советом.';return;}
+      if(m.status==='Исключён'){msg.textContent='Врата закрыты: ты не числишься в Ордене.';return;}
+      finish();
+    } else {
+      if(!config.codes || !Object.keys(config.codes).length){
+        M('config').get().then(function(cd){
+          if(cd.exists) config=Object.assign({codes:{},heraldUrl:'',heraldData:''},cd.data());
+          finish();
+        }).catch(function(){ finish(); });
+      } else { finish(); }
+    }
+    function finish(){
+      if(!config.codes || !Object.keys(config.codes).length){ config.codes={'JEDI-2026':true}; }
+      if(!config.codes[c]){msg.textContent='Неверный код-приглашение. Обратись к Мастеру.';return;}
+      if(!m){
+        var rank=RANKS[+document.getElementById('f-rank').value];
+        m={name:n,rank:rank,status:'Ученик',title:'',inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()};
+        putMember(m); logCouncil('В Орден принят(а) <b>'+esc(n)+'</b> · ранг '+rank);
+      }
+      user={name:m.name,rank:m.rank};
+      if(document.getElementById('f-remember').checked) localStorage.setItem('archive_user',JSON.stringify(user)); else localStorage.removeItem('archive_user');
+      if(document.activeElement) document.activeElement.blur();
+      window.scrollTo(0,0); openApp(); killGate(); top0();
+    }
+  },true);
+
+  /* Enter в полях имени/кода ведёт туда же */
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    var id=e.target && e.target.id;
+    if(id!=='f-name' && id!=='f-code') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var b=document.getElementById('enter'); if(b) b.click();
+  },true);
+})();
+</script>
 </body>
 </html>
