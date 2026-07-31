@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#FBF7EC">
-<link rel="manifest" href="manifest.json">
 <title>Архив · Орден Вольных Джедаев · Акаша</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Forum&family=Jost:wght@300;400;500;600&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -558,7 +557,7 @@ function editProgress(name){
     <label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" ${m.inCouncil?'checked':''}><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label>
     <div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">${checks}</div></div>
     <button class="btn" id="ep-save">Сохранить решение</button>`);
-  $('#ep-save').onclick=()=>{m.rank=$('#ep-rank').value;m.status=$('#ep-status').value;m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher'].value;m.inCouncil=$('#ep-council').checked;m.progress=$$('#ep-checks [data-lid]:checked').map(cb=>cb.dataset.lid);putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»');closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels();buildTree()}};
+  $('#ep-save').onclick=()=>{m.rank=$('#ep-rank').value;m.status=$('#ep-status').value;m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher').value;m.inCouncil=$('#ep-council').checked;m.progress=$$('#ep-checks [data-lid]:checked').map(cb=>cb.dataset.lid);putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»');closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels();buildTree()}};
 }
 function renderAdmin(){
   const box=$('#admin-roster');if(!box)return;
@@ -612,10 +611,29 @@ $('#fs-plus').onclick=()=>bumpZoom(0.1);
 (function autoEnter(){const saved=LS('archive_user',null);if(saved&&saved.name){user={name:saved.name,rank:saved.rank||'Падаван'};$('#gate').classList.remove('active');openApp();window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),60)}})();
 setInterval(()=>{if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
 
-/* ========== PWA: подключение внешних файлов ========== */
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(e => console.log('SW registration failed:', e));
-}
+/* ========== PWA: манифест и воркер вшиты внутрь ========== */
+const mf = {
+  short_name: 'Акаша',
+  name: 'Архив Ордена Вольных Джедаев',
+  start_url: './',
+  scope: './',
+  display: 'standalone',
+  background_color: '#FBF7EC',
+  theme_color: '#B8912F',
+  icons: [
+    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" fill="%23FBF7EC"/><circle cx="96" cy="96" r="60" fill="%23B8912F"/></svg>', sizes: '192x192', type: 'image/svg+xml' },
+    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="%23FBF7EC"/><circle cx="256" cy="256" r="160" fill="%23B8912F"/></svg>', sizes: '512x512', type: 'image/svg+xml' }
+  ]
+};
+const ml = document.createElement('link'); ml.rel='manifest'; ml.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(mf)); document.head.appendChild(ml);
+const swBlob = new Blob([`
+  const CACHE_NAME = 'akasha-v1';
+  const urlsToCache = ['./', './index.html'];
+  self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache))));
+  self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+`], {type: 'application/javascript'});
+const swURL = URL.createObjectURL(swBlob);
+if('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).catch(e => console.log('SW failed:', e));
 </script>
 </body>
 </html>
