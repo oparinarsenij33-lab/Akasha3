@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#FBF7EC">
-<link rel="manifest" href="manifest.json">
 <title>Архив · Орден Вольных Джедаев · Акаша</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Forum&family=Jost:wght@300;400;500;600&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -15,7 +14,7 @@ body{font-family:'Vollkorn',Georgia,serif;color:var(--ink);min-height:100dvh;bac
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 0L56 28L28 56L0 28Z' fill='none' stroke='%23b8912f' stroke-opacity='.08'/%3E%3C/svg%3E")}
 ::selection{background:rgba(217,182,85,.4)}
 .mote{position:fixed;bottom:-12px;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,#E8C96A,rgba(232,201,106,0));animation:rise linear infinite}
-@keyframes rise{to{transform:translateY(-112vh) translateX(24px)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}@keyframes fadeOut{from{opacity:1}to{opacity:0}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(184,145,47,0)}50%{box-shadow:0 0 0 6px rgba(184,145,47,.10)}}@keyframes blinkd{0%,100%{opacity:.3}50%{opacity:1}}@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes rise{to{transform:translateY(-112vh) translateX(24px)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}@keyframes fadeOut{from{opacity:1}to{opacity:0}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(184,145,47,0)}50%{box-shadow:0 0 0 6px rgba(184,145,47,.10)}}
 .screen{display:none;position:relative;z-index:2}.screen.active{display:block;animation:fadeUp .55s ease both}
 .screen.leaving{display:grid;position:fixed;inset:0;place-items:center;z-index:40;animation:fadeOut .46s ease both;pointer-events:none}
 .page{display:none}.page.active{display:block;animation:fadeUp .4s ease both}
@@ -172,7 +171,7 @@ main{max-width:820px;margin:0 auto;padding:24px 18px 130px}
 <section id="gate" class="screen active">
   <div class="gate-grid">
     <div>
-      <div class="emblem herald-trigger"><div class="halo"></div><div class="herald-frame"><img class="herald-img" alt=""><div class="herald-ph"><svg class="ph-ico"><use href="#i-up"/></svg><span class="ph-txt">Герб Ордена<br>установит Совет</span></div><span class="swap">Сменить герб</span></div></div>
+      <div class="emblem herald-trigger"><div class="halo"></div><div class="herald-frame"><img class="herald-img" alt=""><div class="herald-ph"><svg class="ph-ico"><use href="#i-up"/></svg><span class="ph-txt">Загрузить<br>фото</span></div><span class="swap">Сменить герб</span></div></div>
       <p class="kicker">Орден Вольных Джедаев · Эпоха Расцвета</p>
       <h1 class="gate-title">Архив<br><b>Вольных Джедаев</b></h1>
       <div class="orn"><i></i></div>
@@ -269,39 +268,36 @@ const mid=n=>String(n).trim().replace(/[\/#\[\]$]/g,'_');
 const DEFAULT_TREE=[
  {id:'Y2025',year:2025,chapters:[
   {id:'Y2025-C1',title:'Глава I · Основы Пути',lessons:[
-   {id:'Y2025-C1-L1',n:'I',title:'«Основы Силы: дыхание и внимание»',meta:'45 мин · аудио · PDF',minRank:0,body:'<h2>Вступление</h2><p>Сила не начинается с клинка — она начинается с <b>тишины</b>. В этом уроке мы учимся слышать дыхание Галактики.</p><blockquote>Тот, кто не умеет молчать, не услышит Силу.</blockquote><p>Практика: 10 минут неподвижности, внимание на вдох.</p>'},
-   {id:'Y2025-C1-L2',n:'II',title:'«Стойки и шаги: база клинка»',meta:'60 мин · видео · PDF',minRank:1,body:'<h2>База движения</h2><p>Прежде чем атаковать — научись <i>стоять</i>. Разберём три базовые стойки и переходы между ними.</p>'}]},
+   {id:'Y2025-C1-L1',n:'I',title:'«Основы Силы: дыхание и внимание»',meta:'45 мин · аудио · PDF',minRank:0,body:'<h2>Вступление</h2><p>Сила не начинается с клинка — она начинается с <b>тишины</b>.</p>'},
+   {id:'Y2025-C1-L2',n:'II',title:'«Стойки и шаги: база клинка»',meta:'60 мин · видео · PDF',minRank:1,body:'<h2>База движения</h2><p>Прежде чем атаковать — научись <i>стоять</i>.</p>'}]},
   {id:'Y2025-C2',title:'Глава II · Формы клинка',lessons:[
-   {id:'Y2025-C2-L1',n:'III',title:'«Техника Атару: скорость и ритм»',meta:'60 мин · видео · аудио · PDF',minRank:2,body:'<h2>Атару</h2><p>Форма скорости. Ритм важнее силы — двигайся как вода, а не как камень.</p>'},
-   {id:'Y2025-C2-L2',n:'IV',title:'«Защита и отражение»',meta:'50 мин · видео · PDF',minRank:3,body:'<h2>Соресу и Шии-Чо</h2><p>Защита — это не страх, это терпение в действии.</p>'}]}]},
+   {id:'Y2025-C2-L1',n:'III',title:'«Техника Атару: скорость и ритм»',meta:'60 мин · видео',minRank:2,body:'<h2>Атару</h2><p>Ритм важнее силы.</p>'},
+   {id:'Y2025-C2-L2',n:'IV',title:'«Защита и отражение»',meta:'50 мин · видео · PDF',minRank:3,body:'<h2>Соресу</h2><p>Защита — терпение в действии.</p>'}]}]},
  {id:'Y2026',year:2026,chapters:[
   {id:'Y2026-C1',title:'Глава III · Поединок и лидерство',lessons:[
-   {id:'Y2026-C1-L1',n:'V',title:'«Поединок: чтение противника»',meta:'70 мин · видео',minRank:4,body:'<h2>Чтение</h2><p>Победа рождается до первого удара — в умении видеть намерение.</p>'},
-   {id:'Y2026-C1-L2',n:'VI',title:'«Лидерство в поле»',meta:'55 мин · аудио · PDF',minRank:5,body:'<h2>Ответственность</h2><p>Рыцарь ведёт не клинком, а примером.</p>'}]}]}
+   {id:'Y2026-C1-L1',n:'V',title:'«Поединок: чтение противника»',meta:'70 мин · видео',minRank:4,body:'<h2>Чтение</h2><p>Победа рождается до первого удара.</p>'},
+   {id:'Y2026-C1-L2',n:'VI',title:'«Лидерство в поле»',meta:'55 мин · аудио · PDF',minRank:5,body:'<h2>Ответственность</h2><p>Рыцарь ведёт примером.</p>'}]}]}
 ];
 const DEFAULT_ROSTER=[
- {name:'Сефира Ланн',rank:'Мастер',status:'Ученик',title:'Наставник клинка',inCouncil:false,teacher:'',bio:'<p>Храню покой Зала Клинков уже три десятка лет.</p>',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2','Y2025-C2-L1','Y2025-C2-L2','Y2026-C1-L1','Y2026-C1-L2'],lastSeen:0},
- {name:'Кайрен Доль',rank:'Мастер',status:'Ученик',title:'Страж Зала Клинков',inCouncil:false,teacher:'',bio:'',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2','Y2025-C2-L1','Y2025-C2-L2','Y2026-C1-L1','Y2026-C1-L2'],lastSeen:0},
- {name:'Зеррис Вейл',rank:'Магистр',status:'Ученик',title:'Верховный Архивариус',inCouncil:true,teacher:'',bio:'<p>Каждый голокрон помнит руку, что его наполнила.</p>',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2','Y2025-C2-L1','Y2025-C2-L2','Y2026-C1-L1','Y2026-C1-L2'],lastSeen:0},
- {name:'Торен Мал',rank:'Гранд-Мастер',status:'Мастер',title:'',inCouncil:true,teacher:'',bio:'',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2','Y2025-C2-L1','Y2025-C2-L2','Y2026-C1-L1','Y2026-C1-L2'],lastSeen:0},
- {name:'Лиа Солн',rank:'Рыцарь',status:'Рыцарь',title:'',inCouncil:false,teacher:'Сефира Ланн',bio:'',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2','Y2025-C2-L1','Y2025-C2-L2'],lastSeen:0},
- {name:'Эра Квин',rank:'Падаван',status:'Ученик',title:'',inCouncil:false,teacher:'Сефира Ланн',bio:'',avatarUrl:null,progress:['Y2025-C1-L1','Y2025-C1-L2'],lastSeen:0}
+ {name:'Сефира Ланн',rank:'Мастер',status:'Мастер',title:'Наставник клинка',inCouncil:false,teacher:'',bio:'',avatarUrl:null,progress:[],lastSeen:0},
+ {name:'Кайрен Доль',rank:'Мастер',status:'Мастер',title:'Страж Зала Клинков',inCouncil:false,teacher:'',bio:'',avatarUrl:null,progress:[],lastSeen:0},
+ {name:'Зеррис Вейл',rank:'Магистр',status:'Верховный',title:'Верховный Архивариус',inCouncil:true,teacher:'',bio:'',avatarUrl:null,progress:[],lastSeen:0},
+ {name:'Торен Мал',rank:'Гранд-Мастер',status:'Верховный',title:'',inCouncil:true,teacher:'',bio:'',avatarUrl:null,progress:[],lastSeen:0},
+ {name:'Лиа Солн',rank:'Рыцарь',status:'Рыцарь',title:'',inCouncil:false,teacher:'Сефира Ланн',bio:'',avatarUrl:null,progress:[],lastSeen:0},
+ {name:'Эра Квин',rank:'Падаван',status:'Ученик',title:'',inCouncil:false,teacher:'Сефира Ланн',bio:'',avatarUrl:null,progress:[],lastSeen:0}
 ];
-const DEFAULT_LIBRARY=[
- {id:'B1',cat:'hist',title:'«История Расцвета», том I',author:'Архивариус Зеррис Вейл',size:'4,2 МБ',letter:'И',url:''},
- {id:'B2',cat:'fight',title:'«Семь стоек клинка»',author:'Мастер Кайрен Доль',size:'2,8 МБ',letter:'С',url:''},
- {id:'B3',cat:'phil',title:'«Философия Света»',author:'Трактат эпохи Расцвета',size:'1,9 МБ',letter:'Ф',url:''}
-];
-const DEFAULT_SCHEDULE=[{day:'today',t:'18:00',title:'Тренировка клинка',where:'Зал Клинков · Мастер Кайрен Доль'},{day:'today',t:'20:30',title:'Лекция «Дипломатия Расцвета»',where:'Галерея Архива · Архивариус Зеррис Вейл'},{day:'soon',t:'СБ 12:00',title:'Разбор поединков',where:'Зал Клинков'},{day:'soon',t:'ВС 09:00',title:'Утренняя медитация',where:'Шпиль Безмолвия'}];
+const DEFAULT_LIBRARY=[{id:'B1',cat:'hist',title:'«История Расцвета»',author:'Зеррис Вейл',size:'4 МБ',letter:'И',url:''}];
+const DEFAULT_SCHEDULE=[{day:'today',t:'18:00',title:'Тренировка клинка',where:'Зал Клинков'}];
 let uidc=LS('archive_uid',1000);
 function uid(p){uidc++;try{localStorage.setItem('archive_uid',JSON.stringify(uidc))}catch(_){}return p+'-'+uidc+'-'+Date.now().toString(36)}
 function allLessons(){const o=[];tree.forEach(y=>y.chapters.forEach(c=>c.lessons.forEach(l=>o.push({y,c,l}))));return o}
 function findLesson(id){for(const y of tree)for(const c of y.chapters)for(const l of c.lessons)if(l.id===id)return{y,c,l};return null}
+function findChapter(id){for(const y of tree)for(const c of y.chapters)if(c.id===id)return{y,c};return null}
 function lessonLabel(l){return l.n||'◆'}
 function seedProgress(rank){const idx=ri(rank);const a=allLessons().filter(x=>x.l.minRank<=idx).map(x=>x.l.id);if(idx<=3&&a.length)a.pop();return a}
 function normalizeRoster(){roster.forEach(m=>{m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
 function findMember(n){return roster.find(m=>m.name.toLowerCase()===String(n).toLowerCase())}
-function mastersList(){return roster.filter(m=>ri(m.rank)>=5&&ROLE_STATUS.includes(m.status))}
+function mastersList(){return roster.filter(m=>ri(m.rank)>=5&&m.status!=='Исключён')}
 function logCouncil(t){councilLog.unshift({t:Date.now(),text:t});councilLog=councilLog.slice(0,40);putLog()}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2800)}
 function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
@@ -313,7 +309,6 @@ function runReveals(){$$('.rv:not(.on)').forEach(el=>io.observe(el))}
 function avatarHTML(n,cls){const m=findMember(n);const av=m&&m.avatarUrl;const ini=(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const o=onlineInfo(n);return `<span class="ava ${cls||''}">${av?`<img class="herald-img" src="${av}" style="display:block">`:`<span class="ini">${esc(ini)}</span>`}<span class="pres ${o.on?'on':'off'}"></span></span>`}
 function updateSync(){$('#sync-dot').className='pres '+(FS&&navigator.onLine?'on':'off')}
 addEventListener('online',updateSync);addEventListener('offline',updateSync);
-/* ---------- облако: запись ---------- */
 const M=id=>db.collection('meta').doc(id);
 function putTree(){FS&&M('tree').set({data:tree})}
 function putLibrary(){FS&&M('library').set({data:library})}
@@ -321,11 +316,8 @@ function putSchedule(){FS&&M('schedule').set({data:schedule})}
 function putLog(){FS&&M('log').set({data:councilLog})}
 function putConfig(){FS&&M('config').set(config,{merge:true})}
 function putMember(m){FS&&db.collection('members').doc(mid(m.name)).set(m,{merge:true})}
-function dataURLtoBlob(d){const a=d.split(',');const mime=(a[0].match(/:(.*?);/)||[])[1]||'image/png';const b=atob(a[1]);const arr=new Uint8Array(b.length);for(let i=0;i<b.length;i++)arr[i]=b.charCodeAt(i);return new Blob([arr],{type:mime})}
-async function uploadFile(file,folder){if(!sto)throw new Error('storage-off');const ext=(file.name.match(/\.[a-z0-9]+$/i)||[''])[0];const ref=sto.ref(folder+'/'+Date.now()+'_'+Math.random().toString(36).slice(2,6)+ext);await ref.put(file);return await ref.getDownloadURL()}
-async function uploadData(data,folder,ext){if(!sto)throw new Error('storage-off');const ref=sto.ref(folder+'/'+Date.now()+'_'+Math.random().toString(36).slice(2,6)+(ext||'.png'));await ref.put(dataURLtoBlob(data));return await ref.getDownloadURL()}
 function readImage(file,cb){const r=new FileReader();r.onload=ev=>{const im=new Image();im.onload=()=>{const max=640;let w=im.width,h=im.height;if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);let d;try{d=c.toDataURL('image/png')}catch(_){d=c.toDataURL('image/jpeg',.88)}cb(d)};im.src=ev.target.result};r.readAsDataURL(file)}
-/* ---------- подписки: живая Акаша ---------- */
+function readImageSmall(file,cb,max,q){max=max||420;q=q||.6;const r=new FileReader();r.onload=ev=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height;if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);cb(c.toDataURL('image/jpeg',q))};im.src=ev.target.result};r.readAsDataURL(file)}
 function subscribeMeta(){
   unsubMeta.forEach(u=>{try{u()}catch(_){}});unsubMeta=[];
   unsubMeta.push(M('tree').onSnapshot(d=>{if(d.exists)tree=d.data().data||[];if(OPEN){buildTree();renderFeatured();renderProgress()}updateHint()},()=>{}));
@@ -338,33 +330,37 @@ function subscribeMeta(){
 async function seedIfEmpty(){
   try{const t=await M('tree').get();if(!t.exists){await M('tree').set({data:DEFAULT_TREE});await M('library').set({data:DEFAULT_LIBRARY});await M('schedule').set({data:DEFAULT_SCHEDULE});await M('log').set({data:[]});await M('config').set({codes:{'JEDI-2026':true},heraldUrl:'',heraldData:''});tree=structuredClone(DEFAULT_TREE);const b=db.batch();DEFAULT_ROSTER.forEach(m=>b.set(db.collection('members').doc(mid(m.name)),m));await b.commit();}}catch(e){console.warn('seed',e)}
 }
-/* ---------- герб Ордена (общий) ---------- */
 function applyHerald(url){document.body.classList.toggle('has-herald',!!url);$$('.herald-img').forEach(im=>{if(im.id==='profile-ava-img')return;if(url)im.src=url;else im.removeAttribute('src')})}
 $$('.herald-trigger').forEach(t=>t.addEventListener('click',()=>{if(t.id==='profile-ava-wrap')return;$('#herald-input').click()}));
-$('#herald-input').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;if(!user||!isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return}readImage(f,d=>{applyHerald(d);try{config.heraldData=d;putConfig();toast('Герб Ордена обновлён для всего Ордена ✦')}catch(_){toast('Герб обновлён (не удалось сохранить в облако)')}})});
-/* ---------- ранги на Вратах ---------- */
+$('#herald-input').addEventListener('change',e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f||!f.type.startsWith('image/'))return;
+  if(user && !isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return}
+  readImage(f,d=>{applyHerald(d);config.heraldData=d;putConfig();toast('Герб Ордена обновлён ✦')});
+});
 $('#f-rank').innerHTML=RANKS.map((r,i)=>`<option value="${i}"${i===2?' selected':''}>${r}</option>`).join('');
 function updateHint(){const i=+$('#f-rank').value;const oc=allLessons().filter(x=>x.l.minRank<=i).length;$('#rank-hint').textContent='На этом ранге открыто уроков: '+oc+' из '+allLessons().length}
 $('#f-rank').addEventListener('change',updateHint);updateHint();
-/* ---------- вход: код проверяет сервер ---------- */
 async function enter(){
   const n=$('#f-name').value.trim(),c=$('#f-code').value.trim(),msg=$('#gate-msg');msg.textContent='';
   if(!n){$('#fld-name').classList.add('err');setTimeout(()=>$('#fld-name').classList.remove('err'),450);msg.textContent='Назови себя, путник.';return}
   if(!c){$('#fld-code').classList.add('err');setTimeout(()=>$('#fld-code').classList.remove('err'),450);msg.textContent='Предъяви код-приглашение.';return}
   let m=findMember(n);
-  if(m){if(m.status==='Отстранён'){msg.textContent='Врата закрыты: твой допуск приостановлен Советом.';return}if(m.status==='Исключён'){msg.textContent='Врата закрыты: ты более не числишься в Ордене.';return}}
+  if(m){if(m.status==='Отстранён'){msg.textContent='Врата закрыты: допуск приостановлен Советом.';return}if(m.status==='Исключён'){msg.textContent='Врата закрыты: ты не числишься в Ордене.';return}}
   else{
     if(!config.codes||!Object.keys(config.codes).length){try{const cd=await M('config').get();if(cd.exists)config=Object.assign({codes:{},heraldUrl:'',heraldData:''},cd.data())}catch(_){}}
     if(!config.codes||!config.codes[c]){msg.textContent='Неверный код-приглашение. Обратись к Мастеру.';return}
-    const rank=RANKS[+$('#f-rank').value];m={name:n,rank,status:'Ученик',title:'',inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()};putMember(m);logCouncil('В Орден принят(а) <b>'+esc(n)+'</b> · ранг '+rank+'.')}
-  user={name:m.name,rank:m.rank};
-  if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
+    const rank=RANKS[+$('#f-rank').value];m={name:n,rank,status:'Ученик',title:'',inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()};putMember(m);logCouncil('В Орден принят(а) <b>'+esc(n)+'</b> · ранг '+rank);
+  }
+  user={name:m.name,rank:m.rank};if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
   if(document.activeElement)document.activeElement.blur();window.scrollTo(0,0);openApp();
-  const gate=$('#gate');gate.classList.add('leaving');setTimeout(()=>{gate.classList.remove('active','leaving');window.scrollTo(0,0)},470);
+  const gate=$('#gate');gate.style.position='fixed';gate.style.left='0';gate.style.top='0';gate.style.right='0';gate.style.bottom='0';gate.style.margin='0';gate.style.zIndex='9999';gate.style.transition='opacity .45s ease';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{gate.style.opacity='0';}));
+  setTimeout(()=>{gate.classList.remove('active');gate.style.display='none';window.scrollTo(0,0);},480);
 }
 $('#enter').onclick=enter;['#f-name','#f-code'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')enter()}));
-/* ---------- открытие приложения ---------- */
 function openApp(){
+  window.scrollTo(0,0);
   $('#app').classList.add('active');OPEN=true;
   $('#h-name').textContent=user.name;$('#greet').textContent=user.name;$('#p-name').textContent=user.name;
   $('#h-rank').textContent=user.rank;$('#p-rank').textContent='◆ '+user.rank;$('#z-rank').textContent=user.rank;$('#l-rank').textContent='· ранг: '+user.rank;
@@ -374,31 +370,27 @@ function openApp(){
   buildWeek();subscribeMeta();seedIfEmpty();
   renderFeatured();buildTree();renderHallEvents();renderLibrary();renderOrder();renderProgress();renderAdmin();renderSchedule();buildChannels();renderChat();renderProfile();
   presenceTick();runReveals();updateSync();
+  requestAnimationFrame(()=>window.scrollTo(0,0));setTimeout(()=>window.scrollTo(0,0),60);setTimeout(()=>window.scrollTo(0,0),300);
 }
 function presenceTick(){if(!user)return;const m=findMember(user.name);if(m){m.lastSeen=Date.now();putMember({name:user.name,lastSeen:Date.now()})}}
 setInterval(presenceTick,20000);
-/* ---------- навигация ---------- */
 function goto(tab){$$('.page').forEach(p=>p.classList.remove('active'));const pg=$('#s-'+tab);if(pg)pg.classList.add('active');$$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
   if(tab==='chats')renderChat();if(tab==='order')renderOrder();if(tab==='progress')renderProgress();if(tab==='admin')renderAdmin();if(tab==='schedule')renderSchedule();if(tab==='profile')renderProfile();if(tab==='lessons')buildTree();if(tab==='library')renderLibrary();runReveals();window.scrollTo(0,0)}
 $$('.tab').forEach(b=>b.onclick=()=>goto(b.dataset.tab));
 document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]');if(g)goto(g.dataset.goto)});
-/* ---------- статусы уроков по рангу ---------- */
 function lessonStatusMap(){const idx=ri(user.rank);const me=findMember(user.name);const prog=(me&&me.progress)||[];const map={};let open=0,firstOpen=null,firstLocked=null,done=0;allLessons().forEach(({l})=>{let s;if(l.minRank>idx){s='locked';if(!firstLocked)firstLocked=l.id}else if(prog.includes(l.id)){s='done';done++;if(!firstOpen)firstOpen=l.id}else{s='open';open++;if(!firstOpen)firstOpen=l.id}map[l.id]=s});const avail=allLessons().filter(x=>x.l.minRank<=idx).length;return{map,openCount:open+done,done,avail,firstOpen,firstLocked}}
 function renderHallHints(){const{openCount,avail}=lessonStatusMap();$('#hall-lesson-hint').textContent='Открыто '+openCount+' из '+avail+' доступных уроков';$('#hall-lib-hint').textContent=library.length+' трудов в хранилище';$('#hall-sched-hint').textContent=schedule.length+' событий в расписании'}
-/* ---------- дерево учебника ---------- */
 function buildTree(){
   const can=isMaster(user);const{map}=lessonStatusMap();
   $('#tree-admin').innerHTML=can?`<button class="btn small" id="add-year"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить учебный год</button>`:'';
   if(can&&$('#add-year'))$('#add-year').onclick=addYear;
-  if(!tree.length){$('#lessons-tree').innerHTML='<p class="empty-note">Учебник пуст. Мастер может добавить первый учебный год.</p>';renderHallHints();return}
+  if(!tree.length){$('#lessons-tree').innerHTML='<p class="empty-note">Учебник пуст.</p>';renderHallHints();return}
   $('#lessons-tree').innerHTML=tree.map(y=>{const lc=y.chapters.reduce((a,c)=>a+c.lessons.length,0);
-    const chs=y.chapters.map(c=>{const ls=c.lessons.map(l=>{const s=map[l.id],locked=s==='locked';const txt=s==='done'?'✓ сдано':s==='cur'?'в процессе':s==='open'?'открыт':('доступно рангу: '+RANKS[l.minRank]);const cc=(comments['L'+l.id]||[]).length;const right=locked?'<span class="lk"><svg><use href="#i-lock"/></svg></span>':`<button class="open" data-open="${l.id}">Открыть</button>`;
-      const tools=can?`<button class="iconbtn" data-editl="${l.id}" title="Редактировать урок"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dell="${l.id}" title="Удалить урок"><svg><use href="#i-trash"/></svg></button>`:'';
-      return `<div class="lesson${locked?' locked':''}"><div class="num">${lessonLabel(l)}</div><div class="l-info"><h4>${esc(l.title)}</h4><p>${esc(l.meta||'')} · 💬 ${cc}</p><span class="st ${s}">${txt}</span></div><div class="l-act">${tools}${right}</div></div>`}).join('')||'<p class="empty-note">В этой главе пока нет уроков.</p>';
-      const ctools=can?`<button class="iconbtn" data-addl="${c.id}" title="Добавить урок"><svg><use href="#i-plus"/></svg></button><button class="iconbtn" data-editc="${c.id}" title="Переименовать главу"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delc="${c.id}" title="Удалить главу"><svg><use href="#i-trash"/></svg></button>`:'';
-      return `<div class="ch"><div class="ch-h"><span class="dia"></span><h3>${esc(c.title)}</h3><span class="ct">${c.lessons.length} уроков</span>${ctools}</div>${ls}</div>`}).join('')||'<p class="empty-note">Нет глав.</p>';
-    const ytools=can?`<div class="yr-tools"><button class="iconbtn" data-addc="${y.id}" title="Добавить главу"><svg><use href="#i-plus"/></svg></button><button class="iconbtn" data-edity="${y.id}" title="Переименовать год"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dely="${y.id}" title="Удалить год"><svg><use href="#i-trash"/></svg></button></div>`:'';
-    return `<div class="yr rv" data-y="${y.id}"><div class="yr-h" data-toggle="${y.id}"><span class="car">▾</span><h2>Учебный год ${esc(String(y.year))}<small>${lc} уроков · ${y.chapters.length} глав</small></h2>${ytools}</div><div class="yr-body">${chs}</div></div>`}).join('');
+    const chs=y.chapters.map(c=>{const ls=c.lessons.map(l=>{const s=map[l.id],locked=s==='locked';const txt=s==='done'?'✓ сдано':s==='open'?'открыт':('доступно рангу: '+RANKS[l.minRank]);const right=locked?'<span class="lk"><svg><use href="#i-lock"/></svg></span>':`<button class="open" data-open="${l.id}">Открыть</button>`;const tools=can?`<button class="iconbtn" data-editl="${l.id}"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dell="${l.id}"><svg><use href="#i-trash"/></svg></button>`:'';return `<div class="lesson${locked?' locked':''}"><div class="num">${lessonLabel(l)}</div><div class="l-info"><h4>${esc(l.title)}</h4><p>${esc(l.meta||'')}</p><span class="st ${s}">${txt}</span></div><div class="l-act">${tools}${right}</div></div>`}).join('');
+      const ctools=can?`<button class="iconbtn" data-addl="${c.id}"><svg><use href="#i-plus"/></svg></button><button class="iconbtn" data-editc="${c.id}"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delc="${c.id}"><svg><use href="#i-trash"/></svg></button>`:'';
+      return `<div class="ch"><div class="ch-h"><span class="dia"></span><h3>${esc(c.title)}</h3><span class="ct">${c.lessons.length} уроков</span>${ctools}</div>${ls}</div>`}).join('');
+    const ytools=can?`<div class="yr-tools"><button class="iconbtn" data-addc="${y.id}"><svg><use href="#i-plus"/></svg></button><button class="iconbtn" data-edity="${y.id}"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dely="${y.id}"><svg><use href="#i-trash"/></svg></button></div>`:'';
+    return `<div class="yr rv" data-y="${y.id}"><div class="yr-h" data-toggle="${y.id}"><span class="car">▾</span><h2>Учебный год ${esc(String(y.year))}<small>${lc} уроков</small></h2>${ytools}</div><div class="yr-body">${chs}</div></div>`}).join('');
   $$('[data-toggle]').forEach(h=>h.onclick=e=>{if(e.target.closest('.iconbtn'))return;h.closest('.yr').classList.toggle('collapsed')});
   $$('[data-open]').forEach(b=>b.onclick=()=>openLesson(b.dataset.open));
   $$('[data-editl]').forEach(b=>b.onclick=()=>editLesson(b.dataset.editl));
@@ -409,115 +401,73 @@ function buildTree(){
   $$('[data-addc]').forEach(b=>b.onclick=()=>renameChapter(null,b.dataset.addc));
   $$('[data-edity]').forEach(b=>b.onclick=()=>renameYear(b.dataset.edity));
   $$('[data-dely]').forEach(b=>b.onclick=()=>delYear(b.dataset.dely));
-  runReveals();
-  const{openCount,avail}=lessonStatusMap();$('#hall-lesson-hint').textContent='Открыто '+openCount+' из '+avail+' доступных уроков';
+  runReveals();renderHallHints();
 }
 function refreshAfterTree(){putTree();buildTree();renderFeatured();renderProgress();updateHint()}
-/* --- CRUD учебника (Мастер+) --- */
-function addYear(){openModal(`<button class="x" data-x>×</button><p class="kicker">Новый учебный год</p><h2 style="margin-top:6px">Добавить год</h2><div class="field"><label>Год</label><input id="ny-year" type="number" value="${new Date().getFullYear()}"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ny-ok">Создать</button></div>`);
-  $('#ny-ok').onclick=()=>{const y=parseInt($('#ny-year').value,10)||new Date().getFullYear();tree.push({id:uid('Y'),year:y,chapters:[]});logCouncil('<b>'+esc(user.name)+'</b> добавил(а) учебный год '+y);closeModal();refreshAfterTree();toast('Учебный год создан ✦')}}
-function renameYear(id){const o=tree.find(y=>y.id===id);openModal(`<button class="x" data-x>×</button><p class="kicker">Учебный год</p><h2 style="margin-top:6px">Переименовать год</h2><div class="field"><label>Год</label><input id="ry-year" type="number" value="${o?o.year:new Date().getFullYear()}"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ry-ok">Сохранить</button></div>`);
-  $('#ry-ok').onclick=()=>{const y=parseInt($('#ry-year').value,10);if(!y){toast('Введи год');return}if(o)o.year=y;closeModal();refreshAfterTree();toast('Год переименован ✦')}}
-function delYear(id){const y=tree.find(x=>x.id===id);confirmModal('Удалить учебный год '+y.year+' со всеми главами и уроками?',()=>{tree=tree.filter(x=>x.id!==id);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) учебный год '+y.year);refreshAfterTree();toast('Год удалён')})}
-function renameChapter(id,yearId){const create=!id;const f=create?null:findChapter(id);openModal(`<button class="x" data-x>×</button><p class="kicker">Тема / Глава</p><h2 style="margin-top:6px">${create?'Новая глава':'Переименовать главу'}</h2><div class="field"><label>Название темы / главы</label><input id="rc-title" type="text" value="${create?'':esc(f?f.c.title:'')}" placeholder="Напр.: Глава IV · Дипломатия"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="rc-ok">Сохранить</button></div>`);
-  $('#rc-ok').onclick=()=>{const t=$('#rc-title').value.trim();if(!t){toast('Назови главу');return}if(create){const y=tree.find(x=>x.id===yearId);y.chapters.push({id:uid('C'),title:t,lessons:[]});logCouncil('<b>'+esc(user.name)+'</b> создал(а) главу «'+esc(t)+'»')}else{f.c.title=t}closeModal();refreshAfterTree();toast(create?'Глава создана ✦':'Глава переименована ✦')}}
-function findChapter(id){for(const y of tree)for(const c of y.chapters)if(c.id===id)return{y,c};return null}
-function delChapter(id){const f=findChapter(id);confirmModal('Удалить главу «'+f.c.title+'» со всеми уроками?',()=>{f.y.chapters=f.y.chapters.filter(c=>c.id!==id);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) главу «'+esc(f.c.title)+'»');refreshAfterTree();toast('Глава удалена')})}
+function addYear(){openModal(`<button class="x" data-x>×</button><h2>Новый учебный год</h2><div class="field"><label>Год</label><input id="ny-year" type="number" value="${new Date().getFullYear()}"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ny-ok">Создать</button></div>`);
+  $('#ny-ok').onclick=()=>{const y=parseInt($('#ny-year').value,10)||new Date().getFullYear();tree.push({id:uid('Y'),year:y,chapters:[]});logCouncil('<b>'+esc(user.name)+'</b> добавил(а) учебный год '+y);closeModal();refreshAfterTree();}}
+function renameYear(id){const o=tree.find(y=>y.id===id);openModal(`<button class="x" data-x>×</button><h2>Переименовать год</h2><div class="field"><label>Год</label><input id="ry-year" type="number" value="${o?o.year:new Date().getFullYear()}"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ry-ok">Сохранить</button></div>`);
+  $('#ry-ok').onclick=()=>{const y=parseInt($('#ry-year').value,10);if(!y)return;if(o)o.year=y;closeModal();refreshAfterTree();}}
+function delYear(id){const y=tree.find(x=>x.id===id);confirmModal('Удалить учебный год '+y.year+'?',()=>{tree=tree.filter(x=>x.id!==id);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) учебный год '+y.year);refreshAfterTree();})}
+function renameChapter(id,yearId){const create=!id;const f=create?null:findChapter(id);openModal(`<button class="x" data-x>×</button><h2>${create?'Новая глава':'Переименовать главу'}</h2><div class="field"><label>Название</label><input id="rc-title" type="text" value="${create?'':esc(f?f.c.title:'')}"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="rc-ok">Сохранить</button></div>`);
+  $('#rc-ok').onclick=()=>{const t=$('#rc-title').value.trim();if(!t)return;if(create){const y=tree.find(x=>x.id===yearId);y.chapters.push({id:uid('C'),title:t,lessons:[]});logCouncil('<b>'+esc(user.name)+'</b> создал(а) главу «'+esc(t)+'»')}else{f.c.title=t}closeModal();refreshAfterTree();}}
+function delChapter(id){const f=findChapter(id);confirmModal('Удалить главу «'+f.c.title+'»?',()=>{f.y.chapters=f.y.chapters.filter(c=>c.id!==id);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) главу «'+esc(f.c.title)+'»');refreshAfterTree();})}
 function editLesson(id,chapterId){
   const create=!id;const f=create?null:findLesson(id);const l=create?{n:'',title:'',meta:'',minRank:0,body:''}:f.l;
-  openModal(`<button class="x" data-x>×</button><p class="kicker">${create?'Новый урок':'Редактирование урока'}</p><h2 style="margin-top:6px">${create?'Добавить урок':'Править урок'}</h2>
-    <div class="field"><label>Обозначение (необяз., напр. VII)</label><input id="el-n" type="text" value="${esc(l.n||'')}"></div>
-    <div class="field"><label>Название урока</label><input id="el-title" type="text" value="${esc(l.title||'')}" placeholder="«Название»"></div>
-    <div class="field"><label>Мета (формат / длительность)</label><input id="el-meta" type="text" value="${esc(l.meta||'')}" placeholder="60 мин · видео · PDF"></div>
-    <div class="field sel"><label>Минимальный ранг для допуска</label><select id="el-rank">${RANKS.map((r,i)=>`<option value="${i}" ${i===(l.minRank||0)?'selected':''}>${r}</option>`).join('')}</select></div>
+  openModal(`<button class="x" data-x>×</button><h2>${create?'Новый урок':'Править урок'}</h2>
+    <div class="field"><label>Обозначение</label><input id="el-n" type="text" value="${esc(l.n||'')}"></div>
+    <div class="field"><label>Название</label><input id="el-title" type="text" value="${esc(l.title||'')}"></div>
+    <div class="field"><label>Мета</label><input id="el-meta" type="text" value="${esc(l.meta||'')}"></div>
+    <div class="field sel"><label>Минимальный ранг</label><select id="el-rank">${RANKS.map((r,i)=>`<option value="${i}" ${i===(l.minRank||0)?'selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field"><label>Текст урока</label><div id="el-writer-mount" style="margin-top:8px"></div></div>
-    <div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">${create?'Создать урок':'Сохранить'}</button></div>`);
-  const w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{inlineMedia:true});if(!create)setWriterHTML(w,l.body||'');
-  $('#el-ok').onclick=()=>{
-    const title=$('#el-title').value.trim();if(!title){toast('Назови урок');return}
-    const data={n:$('#el-n').value.trim(),title,meta:$('#el-meta').value.trim(),minRank:+$('#el-rank').value,body:getWriterHTML(w)};
+    <div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">${create?'Создать':'Сохранить'}</button></div>`);
+  const w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{});if(!create)setWriterHTML(w,l.body||'');
+  $('#el-ok').onclick=()=>{const title=$('#el-title').value.trim();if(!title)return;const data={n:$('#el-n').value.trim(),title,meta:$('#el-meta').value.trim(),minRank:+$('#el-rank').value,body:getWriterHTML(w)};
     if(create){const ch=findChapter(chapterId).c;data.id=uid('L');ch.lessons.push(data);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) урок «'+esc(title)+'»')}
     else{Object.assign(l,data);logCouncil('<b>'+esc(user.name)+'</b> отредактировал(а) урок «'+esc(title)+'»')}
-    closeModal();refreshAfterTree();toast(create?'Урок создан ✦':'Урок сохранён ✦');
-  };
+    closeModal();refreshAfterTree();};
 }
-function delLesson(id){const f=findLesson(id);confirmModal('Удалить урок «'+f.l.title+'»?',()=>{f.c.lessons=f.c.lessons.filter(x=>x.id!==id);delete comments['L'+id];SV('archive_comments',comments);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');refreshAfterTree();toast('Урок удалён')})}
-/* ========== модалка урока + комментарии ========== */
+function delLesson(id){const f=findLesson(id);confirmModal('Удалить урок «'+f.l.title+'»?',()=>{f.c.lessons=f.c.lessons.filter(x=>x.id!==id);logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');refreshAfterTree();})}
 function openLesson(id){
   const f=findLesson(id);if(!f)return;const l=f.l,key='L'+id;const can=isMaster(user);
-  openModal(`<button class="x" data-x>×</button><p class="kicker">Урок ${lessonLabel(l)} · ${esc(l.meta||'')} · ${esc(f.y.year)} / ${esc(f.c.title)}</p><h2 style="margin-top:6px">${esc(l.title)}</h2>${can?`<div style="margin-top:10px"><button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button></div>`:''}<div class="orn"><i></i></div><div class="bio" style="margin-top:0">${l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>'}</div>
-    <div class="sec-h" style="margin-top:22px"><h2>Комментарии Ордена</h2><span id="cc-count"></span></div>
-    <div id="cc-list"></div>
-    <div style="margin-top:14px"><p class="kicker" style="margin-bottom:6px">Оставить комментарий</p><div id="cc-writer-mount"></div><div class="send-row"><button class="btn" id="cc-send">Отправить в Архив</button></div></div>`);
+  openModal(`<button class="x" data-x>×</button><h2>${esc(l.title)}</h2>${can?`<button class="btn ghost small" id="ol-edit">✎ Редактировать</button>`:''}<div class="bio" style="margin-top:10px">${l.body||'<p>Тело урока пока пусто.</p>'}</div>`);
   if(can)$('#ol-edit').onclick=()=>{closeModal();setTimeout(()=>editLesson(id),120)};
-  mountWriter($('#cc-writer-mount'),'Написать мысль…',{inlineMedia:true});
-  renderComments(key);
-  $('#cc-send').onclick=()=>{
-    const w=$('#cc-writer-mount .writer');const html=getWriterHTML(w);if(!html.trim()){toast('Пустой комментарий');return}
-    comments[key]=comments[key]||[];comments[key].push({author:user.name,html,ts:Date.now()});SV('archive_comments',comments);
-    clearWriter(w);renderComments(key);toast('Комментарий оставлен ✦');
-  };
 }
-function renderComments(key){
-  const list=comments[key]||[];$('#cc-count').textContent=list.length;
-  $('#cc-list').innerHTML=list.length?list.map((c,idx)=>{const mine=c.author===user.name;const o=onlineInfo(c.author);return `<div class="comment"><div class="ch">${avatarHTML(c.author)} ${esc(c.author)} <span class="pres-txt ${o.on?'on':''}">${o.txt}</span>${mine?`<button class="cedit" data-edit="${idx}">править</button><button class="cedit" data-del="${idx}" style="color:var(--red)">удалить</button>`:''}</div><div class="cb">${c.html}</div></div>`}).join(''):'<p class="empty-note">Пока тишина. Будь первым, кто оставит след.</p>';
-  $$('#cc-list [data-edit]').forEach(b=>b.onclick=()=>{const c=comments[key][+b.dataset.edit];const w=$('#cc-writer-mount .writer');w._cedit=+b.dataset.edit;setWriterHTML(w,c.html);w.scrollIntoView({behavior:'smooth'});toast('Правь и жми «Отправить»')});
-  $$('#cc-list [data-del]').forEach(b=>b.onclick=()=>{comments[key].splice(+b.dataset.del,1);SV('archive_comments',comments);renderComments(key);toast('Комментарий удалён')});
-  const sendBtn=$('#cc-send');sendBtn.onclick=()=>{
-    const w=$('#cc-writer-mount .writer');const html=getWriterHTML(w);
-    if(!html.trim()){toast('Пусто');return}
-    if(w._cedit!=null){comments[key][w._cedit].html=html;w._cedit=null}else{comments[key].push({author:user.name,html,ts:Date.now()})}
-    SV('archive_comments',comments);clearWriter(w);renderComments(key);toast('Сохранено ✦');
-  };
-}
-/* ---------- featured (реальный прогресс) ---------- */
 function renderFeatured(){
   const st=lessonStatusMap();const f=$('#featured');const pct=st.avail?Math.round(st.done/st.avail*100):0;
-  if(st.firstOpen){const l=findLesson(st.firstOpen).l;f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твоё обучение · ранг: ${user.rank}</p><h3>Урок ${lessonLabel(l)} — ${esc(l.title)}</h3><div class="progress"><i data-w="${pct}"></i></div><div class="f-row"><span>Пройдено ${st.done} из ${st.avail} доступных (${pct}%)</span><button class="btn small" id="feat-go">Открыть</button></div>`;setTimeout(()=>{const b=f.querySelector('.progress i');if(b)b.style.width=pct+'%'},120);f.querySelector('#feat-go').onclick=()=>goto('lessons')}
-  else if(st.firstLocked){const l=findLesson(st.firstLocked).l;f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твой следующий шаг</p><h3>Урок ${lessonLabel(l)} — ${esc(l.title)}</h3><div class="f-lock"><svg><use href="#i-lock"/></svg><span>Откроется на ранге: ${RANKS[l.minRank]}</span></div><div class="f-row"><span>Пройдено ${st.done} из ${st.avail} доступных</span><span class="btn small is-locked">Заперто Силой</span></div>`}
-  else{f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Путь пройден</p><h3>Все доступные уроки сданы.</h3><div class="progress"><i data-w="100"></i></div><div class="f-row"><span>${st.done} из ${st.avail} · жди новых глав от Совета</span></div>`;setTimeout(()=>{const b=f.querySelector('.progress i');if(b)b.style.width='100%'},120)}
+  if(st.firstOpen){const l=findLesson(st.firstOpen).l;f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твоё обучение</p><h3>Урок ${lessonLabel(l)} — ${esc(l.title)}</h3><div class="progress"><i data-w="${pct}"></i></div><div class="f-row"><span>Пройдено ${st.done} из ${st.avail}</span><button class="btn small" id="feat-go">Открыть</button></div>`;setTimeout(()=>{const b=f.querySelector('.progress i');if(b)b.style.width=pct+'%'},120);f.querySelector('#feat-go').onclick=()=>goto('lessons')}
+  else if(st.firstLocked){const l=findLesson(st.firstLocked).l;f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твой следующий шаг</p><h3>Урок ${lessonLabel(l)} — ${esc(l.title)}</h3><div class="f-lock"><svg><use href="#i-lock"/></svg><span>Откроется на ранге: ${RANKS[l.minRank]}</span></div>`}
+  else{f.innerHTML=`<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Путь пройден</p><h3>Все доступные уроки сданы.</h3>`}
   applyHerald(config.heraldData||null);
 }
-
-/* ===================== ЧАСТЬ 3: голос Архива ===================== */
-let comments={},currentLid=null,libFilter='all';
-function readImageSmall(file,cb,max,q){max=max||420;q=q||.6;const r=new FileReader();r.onload=ev=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height;if(w>max||h>max){const k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);cb(c.toDataURL('image/jpeg',q))};im.src=ev.target.result};r.readAsDataURL(file)}
 function escAttr(u){return String(u).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function insertIntoWriterRich(w,tag){if(w.classList.contains('kb')){toast('Выйди из Гравировки, чтобы вставить медиа');return}const r=w.querySelector('.rich');r.focus();document.execCommand('insertHTML',false,tag)}
+function insertIntoWriterRich(w,tag){if(w.classList.contains('kb'))return;const r=w.querySelector('.rich');r.focus();document.execCommand('insertHTML',false,tag)}
 function insertMediaLink(w,u){u=(u||'').trim();if(!u)return;const low=u.toLowerCase().split('?')[0].split('#')[0];let tag;if(/\.(png|jpe?g|gif|webp|avif)$/.test(low))tag=`<img class="media" src="${escAttr(u)}" alt="">`;else if(/\.(mp4|webm|mov)$/.test(low))tag=`<video class="media" src="${escAttr(u)}" controls></video>`;else if(/\.(mp3|ogg|wav|m4a)$/.test(low))tag=`<audio class="media" src="${escAttr(u)}" controls></audio>`;else tag=`<a href="${escAttr(u)}" target="_blank" rel="noopener">📎 ${esc(u)}</a>`;insertIntoWriterRich(w,tag)}
-/* ---------- писатель ---------- */
 function mountWriter(mount,ph,opts){
   opts=opts||{};
   mount.innerHTML=`<div class="writer"><div class="wbar">
     <button class="fmt b" data-c="bold">Ж</button><button class="fmt i" data-c="italic">К</button><button class="fmt u" data-c="underline">П</button><span class="sep fmt"></span>
     <button class="fmt" data-b="H1">H1</button><button class="fmt" data-b="H2">H2</button><button class="fmt" data-b="H3">H3</button><span class="sep fmt"></span>
     <button class="fmt" data-b="BLOCKQUOTE">❝</button><span class="sep fmt"></span>
-    <button class="fmt" data-c="justifyLeft">⬅</button><button class="fmt" data-c="justifyCenter"></button><button class="fmt" data-c="justifyRight">➡</button>
-    <button class="clip" data-clip title="Прикрепить фото"><svg><use href="#i-clip"/></svg></button>
-    <button class="clip" data-link title="Ссылка на фото/видео/аудио"><svg><use href="#i-link"/></svg></button>
+    <button class="clip" data-link title="Ссылка на медиа"><svg><use href="#i-link"/></svg></button>
     <button class="kb-toggle" data-kb title="Кастомная клавиатура">⌨ Гравировка</button>
-  </div><div class="rich" contenteditable="true" data-ph="${ph}"></div><textarea class="plain" inputmode="none"></textarea><div class="wmedia" style="padding:0 14px 8px;font-family:Jost;font-size:11px;color:var(--green)"></div></div>${opts.withSend?'<div class="send-row"><button class="btn" id="chat-send">Отправить</button></div>':''}`;
-  const w=mount.querySelector('.writer');w._opts=opts;const rich=w.querySelector('.rich'),plain=w.querySelector('.plain');
+  </div><div class="rich" contenteditable="true" data-ph="${ph}"></div><textarea class="plain" inputmode="none"></textarea></div>${opts.withSend?'<div class="send-row"><button class="btn" id="chat-send">Отправить</button></div>':''}`;
+  const w=mount.querySelector('.writer');const rich=w.querySelector('.rich');
   w.querySelectorAll('.fmt[data-c]').forEach(b=>b.onclick=()=>{rich.focus();document.execCommand(b.dataset.c,false,null)});
   w.querySelectorAll('.fmt[data-b]').forEach(b=>b.onclick=()=>{rich.focus();document.execCommand('formatBlock',false,b.dataset.b)});
-  w.querySelector('[data-clip]').onclick=()=>{activeWriter=w;$('#media-input').click()};
-  w.querySelector('[data-link]').onclick=()=>{activeWriter=w;const u=prompt('Ссылка на фото / видео / аудио / PDF\n(Яндекс.Диск, Google Drive, YouTube и т.п.)');insertMediaLink(w,u)};
+  w.querySelector('[data-link]').onclick=()=>{activeWriter=w;const u=prompt('Ссылка на фото / видео / аудио / PDF');insertMediaLink(w,u)};
   w.querySelector('[data-kb]').onclick=()=>toggleKB(w);
-  plain.addEventListener('input',()=>{});
   return w;
 }
 function getWriterHTML(w){return w.classList.contains('kb')?esc(w.querySelector('.plain').value).replace(/\n/g,'<br>'):w.querySelector('.rich').innerHTML}
-function setWriterHTML(w,html){const r=w.querySelector('.rich');r.innerHTML=html;w.querySelector('.plain').value=r.innerText}
-function clearWriter(w){w.querySelector('.rich').innerHTML='';w.querySelector('.plain').value='';w.querySelector('.wmedia').textContent='';w._cedit=undefined}
+function setWriterHTML(w,html){const r=w.querySelector('.rich');r.innerHTML=html||'';w.querySelector('.plain').value=r.innerText}
+function clearWriter(w){w.querySelector('.rich').innerHTML='';w.querySelector('.plain').value='';w._cedit=undefined}
 function toggleKB(w){const on=!w.classList.contains('kb');if(on){w.querySelector('.plain').value=w.querySelector('.rich').innerText;w.classList.add('kb');w.querySelector('[data-kb]').classList.add('on');activeWriter=w;showKB(true)}else{w.querySelector('.rich').innerText=w.querySelector('.plain').value;w.classList.remove('kb');w.querySelector('[data-kb]').classList.remove('on');showKB(false)}}
-$('#media-input').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!activeWriter)return;const type=f.type.startsWith('image')?'img':f.type.startsWith('video')?'video':f.type.startsWith('audio')?'audio':null;if(!type){toast('Неподдерживаемый файл');return}readImageSmall(f,data=>{activeWriter._media={type,data};activeWriter.querySelector('.wmedia').textContent='✓ '+f.name})});
-
-/* ========== кастомная клавиатура ========== */
 const LAYOUTS={ru:['йцукенгшщзхъ','фывапролджэ','ячсмитьбю'],en:['qwertyuiop','asdfghjkl','zxcvbnm'],sym:['.,?!:;','"\'-_()','[]{}@#$%','&*+=/\\|']};
 function buildKB(){const rows=$('#kb-rows');let h='';LAYOUTS[kbLang].forEach(r=>{h+='<div class="kb-row">';[...r].forEach(ch=>{const c=kbShift?ch.toUpperCase():ch;h+=`<button class="key" data-ch="${c}">${c}</button>`});h+='</div>'});h+=`<div class="kb-row"><button class="key wide shift ${kbShift?'on':''}" data-act="shift">⇧</button><button class="key wide" data-act="lang">${kbLang.toUpperCase()}</button><button class="key space" data-act="space">пробел</button><button class="key wide" data-act="back">⌫</button><button class="key wide" data-act="enter">↵</button></div>`;rows.innerHTML=h;
   rows.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>kbType(b.dataset.ch));
   rows.querySelector('[data-act=shift]').onclick=()=>{kbShift=!kbShift;buildKB()};
-  rows.querySelector('[data-act=lang]').onclick=()=>{kbLang=kbLang==='ru'?'en':kbLang==='en'?'sym':'ru';buildKB()};
+  rows.querySelector('[data-act=lang]').onclick=()=>{kbLang=kbLang==='ru'?'en':(kbLang==='en'?'sym':'ru');buildKB()};
   rows.querySelector('[data-act=space]').onclick=()=>kbType(' ');
   rows.querySelector('[data-act=back]').onclick=()=>kbBack();
   rows.querySelector('[data-act=enter]').onclick=()=>kbType('\n');
@@ -525,226 +475,165 @@ function buildKB(){const rows=$('#kb-rows');let h='';LAYOUTS[kbLang].forEach(r=>
 function kbType(ch){if(!activeWriter||!activeWriter.classList.contains('kb'))return;const ta=activeWriter.querySelector('.plain');const s=ta.selectionStart,e=ta.selectionEnd;ta.value=ta.value.slice(0,s)+ch+ta.value.slice(e);ta.selectionStart=ta.selectionEnd=s+ch.length;if(kbShift){kbShift=false;buildKB()}}
 function kbBack(){if(!activeWriter)return;const ta=activeWriter.querySelector('.plain');const s=ta.selectionStart,e=ta.selectionEnd;if(s===e&&s>0){ta.value=ta.value.slice(0,s-1)+ta.value.slice(e);ta.selectionStart=ta.selectionEnd=s-1}else{ta.value=ta.value.slice(0,s)+ta.value.slice(e);ta.selectionStart=ta.selectionEnd=s}}
 function showKB(on){$('#kb').classList.toggle('show',on);if(on){buildKB();if(activeWriter){const ta=activeWriter.querySelector('.plain');ta.setAttribute('inputmode','none');ta.focus({preventScroll:true})}}else if(activeWriter){activeWriter.querySelector('.plain').blur()}}
-$('#kb-system').onclick=()=>{if(activeWriter){activeWriter.classList.remove('kb');activeWriter.querySelector('[data-kb]').classList.remove('on');const r=activeWriter.querySelector('.rich');r.innerText=activeWriter.querySelector('.plain').value;r.removeAttribute('inputmode');r.focus()}showKB(false)};
-
-/* ========== библиотека ========== */
+$('#kb-system').onclick=()=>{if(activeWriter){activeWriter.classList.remove('kb');activeWriter.querySelector('[data-kb]').classList.remove('on');const r=activeWriter.querySelector('.rich');r.innerText=activeWriter.querySelector('.plain').value;r.focus()}showKB(false)};
 function renderLibrary(){
   const can=isMaster(user);
-  $('#lib-admin').innerHTML=can?`<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд в хранилище</button>`:'';
-  if(can)$('#add-book').onclick=addBook;
+  $('#lib-admin').innerHTML=can?`<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд</button>`:'';
+  if(can&&$('#add-book'))$('#add-book').onclick=addBook;
   const cats=[['all','Все'],['hist','История'],['fight','Боевое искусство'],['phil','Философия']];
   $('#lib-chips').innerHTML=cats.map(c=>`<button class="chip ${libFilter===c[0]?'on':''}" data-f="${c[0]}">${c[1]}</button>`).join('');
   $$('#lib-chips .chip').forEach(b=>b.onclick=()=>{libFilter=b.dataset.f;renderLibrary()});
-  const list=library.filter(b=>libFilter==='all'||b.cat===libFilter);
-  $('#lib-list').innerHTML=list.length?list.map(b=>`<div class="book rv"><div class="cover">${esc(b.letter||b.title[0]||'?')}</div><div class="b-info"><h4>${esc(b.title)}</h4><p>${esc(b.author||'')} · ${esc(b.size||'')}</p>${b.url?'<a href="'+escAttr(b.url)+'" target="_blank" rel="noopener">↗ ссылка на облако</a>':''}</div>${can?`<button class="iconbtn dng" data-delb="${b.id}" title="Удалить"><svg><use href="#i-trash"/></svg></button>`:''}<button class="dl" data-dlb="${b.id}"><span>Скачать</span><i></i></button></div>`).join(''):'<p class="empty-note">В этом разделе пока пусто.</p>';
-  $('#hall-lib-hint').textContent=library.length+' трудов в хранилище';
-  $$('#lib-list [data-delb]').forEach(b=>b.onclick=()=>confirmModal('Удалить труд из хранилища?',()=>{library=library.filter(x=>x.id!==b.dataset.delb);SV('archive_library',library);renderLibrary();toast('Труд удалён')}));
-  $$('#lib-list [data-dlb]').forEach(btn=>{btn.onclick=()=>{if(btn.dataset.busy)return;btn.dataset.busy=1;btn.querySelector('span').textContent='Загрузка…';const bar=btn.querySelector('i');let w=0;const t=setInterval(()=>{w+=4+Math.random()*10;if(w>=100){clearInterval(t);btn.classList.add('done');btn.innerHTML='✓ В оффлайне';toast('Труд сохранён — читай без сети')}else bar.style.width=w+'%'},90)}});
+  const shown=library.filter(b=>libFilter==='all'||b.cat===libFilter);
+  $('#lib-list').innerHTML=shown.length?shown.map(b=>{const open=b.url?`<a class="dl" href="${escAttr(b.url)}" target="_blank" rel="noopener">Открыть</a>`:`<span class="dl">Нет ссылки</span>`;const del=can?`<button class="iconbtn dng" data-delb="${b.id}"><svg><use href="#i-trash"/></svg></button>`:'';return `<div class="book rv"><div class="cover">${esc(b.letter||b.title[0]||'?')}</div><div class="b-info"><h4>${esc(b.title)}</h4><p>${esc(b.author||'')} · ${esc(b.size||'')}</p></div>${del}${open}</div>`}).join(''):'<p class="empty-note">Пусто.</p>';
+  $$('#lib-list [data-delb]').forEach(b=>b.onclick=()=>confirmModal('Удалить труд?',()=>{library=library.filter(x=>x.id!==b.dataset.delb);putLibrary();renderLibrary();}));
   runReveals();
 }
-function addBook(){openModal(`<button class="x" data-x>×</button><p class="kicker">Хранилище голокронов</p><h2 style="margin-top:6px">Новый труд</h2>
-  <div class="field"><label>Название</label><input id="ab-title" type="text" placeholder="«Название труда»"></div>
-  <div class="field"><label>Автор / источник</label><input id="ab-author" type="text" placeholder="Мастер …"></div>
+function addBook(){openModal(`<button class="x" data-x>×</button><h2>Новый труд</h2>
+  <div class="field"><label>Название</label><input id="ab-title" type="text"></div>
+  <div class="field"><label>Автор</label><input id="ab-author" type="text"></div>
   <div class="field sel"><label>Раздел</label><select id="ab-cat"><option value="hist">История</option><option value="fight">Боевое искусство</option><option value="phil">Философия</option></select></div>
-  <div class="field"><label>Ссылка на файл в облаке</label><input id="ab-url" type="text" placeholder="https://… (Яндекс.Диск, Google Drive и т.п.)"></div>
-  <div class="field"><label>Размер (необязательно)</label><input id="ab-size" type="text" placeholder="4,2 МБ"></div>
+  <div class="field"><label>Ссылка</label><input id="ab-url" type="text"></div>
   <div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ab-ok">Добавить</button></div>`);
-  $('#ab-ok').onclick=()=>{
-    const t=$('#ab-title').value.trim();if(!t){toast('Назови труд');return}
-    library.push({id:uid('B'),cat:$('#ab-cat').value,title:t,author:$('#ab-author').value.trim(),size:$('#ab-size').value.trim()||'—',url:$('#ab-url').value.trim(),letter:t.replace(/[«»""]/g,'')[0]||'?'});
-    SV('archive_library',library);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) в хранилище «'+esc(t)+'»');
-    closeModal();renderLibrary();toast('Труд добавлен ✦');
-  };
+  $('#ab-ok').onclick=()=>{const t=$('#ab-title').value.trim();if(!t)return;library.push({id:uid('B'),cat:$('#ab-cat').value,title:t,author:$('#ab-author').value.trim(),size:'—',letter:t[0]||'?',url:$('#ab-url').value.trim()});putLibrary();logCouncil('<b>'+esc(user.name)+'</b> добавил(а) «'+esc(t)+'»');closeModal();renderLibrary();};
 }
-
-/* ========== расписание ========== */
-function buildWeek(){const wd=$('#week');if(wd.children.length)return;const now=new Date(),names=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const c=document.createElement('div');c.className='day'+(d.toDateString()===now.toDateString()?' today':'');c.innerHTML=`<span>${names[i]}</span><b>${d.getDate()}</b>`;wd.appendChild(c)}}
+function buildWeek(){const wd=$('#week');if(!wd||wd.children.length)return;const now=new Date(),names=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const c=document.createElement('div');c.className='day'+(d.toDateString()===now.toDateString()?' today':'');c.innerHTML=`<span>${names[i]}</span><b>${d.getDate()}</b>`;wd.appendChild(c)}}
 function renderSchedule(){
   const can=isMaster(user);$('#admin-sched').style.display=can?'block':'none';
-  if(can&&!$('#admin-sched').children.length){$('#admin-sched').innerHTML=`<div class="sec-h"><h2>Добавить событие</h2></div><div class="field"><label>Время / день</label><input id="sch-t" type="text" placeholder="Напр.: ПТ 19:00"></div><div class="field"><label>Название</label><input id="sch-title" type="text" placeholder="Напр.: Совет у голокрона"></div><div class="field"><label>Место / ведущий</label><input id="sch-where" type="text" placeholder="Напр.: Шпиль Безмолвия"></div><button class="btn small" id="sch-add" style="margin-top:12px">Внести в расписание</button>`;$('#sch-add').onclick=()=>{const t=$('#sch-t').value.trim(),ti=$('#sch-title').value.trim(),w=$('#sch-where').value.trim();if(!ti){toast('Назови событие');return}schedule.push({day:'today',t:t||'—',title:ti,where:w});SV('archive_schedule',schedule);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) событие «'+esc(ti)+'»');$('#sch-t').value=$('#sch-title').value=$('#sch-where').value='';renderSchedule();renderHallEvents();toast('Событие внесено ✦')}}
+  if(can&&!$('#admin-sched').children.length){$('#admin-sched').innerHTML=`<div class="sec-h"><h2>Добавить событие</h2></div><div class="field"><label>Время</label><input id="sch-t" type="text"></div><div class="field"><label>Название</label><input id="sch-title" type="text"></div><div class="field"><label>Место</label><input id="sch-where" type="text"></div><button class="btn small" id="sch-add" style="margin-top:12px">Внести</button>`;$('#sch-add').onclick=()=>{const ti=$('#sch-title').value.trim();if(!ti)return;schedule.push({day:'soon',t:$('#sch-t').value.trim()||'—',title:ti,where:$('#sch-where').value.trim()});putSchedule();logCouncil('<b>'+esc(user.name)+'</b> добавил(а) «'+esc(ti)+'»');$('#sch-t').value=$('#sch-title').value=$('#sch-where').value='';renderSchedule();renderHallEvents();}}
   const evs=schedule.slice().reverse();
-  $('#sched-list').innerHTML=evs.map((e,i)=>{const realIdx=schedule.length-1-i;return `<div class="ev"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span>${can?`<button class="del" data-sd="${realIdx}">удалить</button>`:''}</div>`}).join('')||'<p class="empty-note">Расписание пусто.</p>';
-  $$('#sched-list [data-sd]').forEach(b=>b.onclick=()=>{schedule.splice(+b.dataset.sd,1);SV('archive_schedule',schedule);renderSchedule();renderHallEvents()});
+  $('#sched-list').innerHTML=evs.map((e,i)=>{const realIdx=schedule.length-1-i;return `<div class="ev"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span>${can?`<button class="del" data-sd="${realIdx}">удалить</button>`:''}</div>`}).join('')||'<p class="empty-note">Пусто.</p>';
+  $$('#sched-list [data-sd]').forEach(b=>b.onclick=()=>{schedule.splice(+b.dataset.sd,1);putSchedule();renderSchedule();renderHallEvents()});
 }
-function renderHallEvents(){$('#hall-events').innerHTML=schedule.filter(e=>e.day==='today').map(e=>`<div class="ev rv"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span></div>`).join('');$('#hall-sched-hint').textContent=schedule.length+' событий в расписании';runReveals()}
-
-/* ========== чаты ========== */
+function renderHallEvents(){$('#hall-events').innerHTML=schedule.filter(e=>e.day==='today').map(e=>`<div class="ev rv"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span></div>`).join('');runReveals()}
+function chanTitle(){if(activeChannel==='general')return{name:'Общий зал',sub:'все члены Ордена',ava:true};if(activeChannel==='council')return{name:'Совет Мастеров',sub:'только члены Совета',ava:true};return{name:activeChannel.slice(3),sub:'',ava:false}}
 function buildChannels(){
-  const bar=$('#chan-bar');let h=`<button class="chan ${activeChannel==='general'?'on':''}" data-ch="general"># Общий зал</button>`;
+  const bar=$('#chan-bar');if(!bar)return;let h=`<button class="chan ${activeChannel==='general'?'on':''}" data-ch="general"># Общий зал</button>`;
   if(isCouncil(user))h+=`<button class="chan council ${activeChannel==='council'?'on':''}" data-ch="council"># Совет Мастеров</button>`;
   h+=`<span style="align-self:center;font-family:Jost;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);padding:0 6px">личные</span>`;
   roster.filter(m=>m.name!==user.name&&m.status!=='Исключён').forEach(m=>{const o=onlineInfo(m.name);h+=`<button class="chan ${activeChannel==='dm:'+m.name?'on':''}" data-ch="dm:${esc(m.name)}"><span class="dot ${o.on?'on':'off'}"></span>${esc(m.name)}</button>`});
-  bar.innerHTML=h;$$('#chan-bar .chan').forEach(b=>b.onclick=()=>{activeChannel=b.dataset.ch;buildChannels();renderChat()});
+  bar.innerHTML=h;$$('#chan-bar .chan').forEach(b=>b.onclick=()=>switchChannel(b.dataset.ch));
 }
-function renderChat(){
-  buildChannels();const o=activeChannel==='general'?{on:true,txt:'все члены Ордена'}:activeChannel==='council'?{on:true,txt:'только члены Совета'}:onlineInfo(activeChannel.slice(3));
-  $('#chat-head').innerHTML=`<div class="ava">${avatarHTML(activeChannel==='general'||activeChannel==='council'?'':activeChannel.slice(3))}</div><div><h4>${esc(activeChannel.slice(3))}</h4><span class="meta pres-txt ${o.on?'on':''}">${o.txt}${findMember(activeChannel.slice(3))?' · '+findMember(activeChannel.slice(3)).rank:''}</span></div>`;
-  applyHerald(config.heraldData||null);
-  const key=activeChannel;const list=chats[key]||[];
-  $('#chat-wrap').innerHTML=list.map(m=>{const mine=m.author===user.name;const media=m.media?`<${m.media.type} class="media" src="${m.media.data}" controls></${m.media.type}>`:'';return `<div class="msg ${mine?'me':'them'}">${!mine&&activeChannel==='general'?`<span class="au">${esc(m.author)}</span>`:''}${m.html||''}${media}<small>${new Date(m.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</small>${mine?`<span class="mact"><button data-med>править</button><button data-mdel style="color:var(--red)">удалить</button></span>`:''}</div>`}).join('')||'<p style="color:var(--ink-2);align-self:center;margin:auto">Тишина в канале. Напиши первым.</p>';
-  $$('#chat-wrap [data-mdel]').forEach(b=>b.onclick=()=>{chats[key].splice(+b.dataset.mdel,1);SV('archive_chats',chats);renderChat()});
-  $$('#chat-wrap [data-med]').forEach(b=>b.onclick=()=>{
-    const m=chats[key][+b.dataset.med];const w=$('#chat-writer-mount .writer');
-    w._editing={key,idx:+b.dataset.med};setWriterHTML(w,m.html||'');w.scrollIntoView({behavior:'smooth'});toast('Правь сообщение и жми «Отправить»');
-  });
-  $('#chat-wrap').scrollTop=$('#chat-wrap').scrollHeight;
-  if(!$('#chat-writer-mount .writer'))mountWriter($('#chat-writer-mount'),'Написать в канал…',{withSend:true});
-  $('#chat-send').onclick=sendChat;
+function switchChannel(key){activeChannel=key;buildChannels();renderChatHead();ensureChatWriter();subscribeChannel(key)}
+function subscribeChannel(key){try{chatUnsub&&chatUnsub()}catch(_){}chatUnsub=db.collection('chats').doc(key).onSnapshot(d=>{curMsgs=d.exists?(d.data().messages||[]):[];if(activeChannel===key)paintChat()},()=>{})}
+function renderChatHead(){const ct=chanTitle();const o=ct.ava?null:onlineInfo(ct.name);$('#chat-head').innerHTML=ct.ava?`<div class="ava"><span class="herald-frame"><img class="herald-img" alt=""><span class="herald-ph"><span class="ph-dia"></span></span></span></div><div><h4>${esc(ct.name)}</h4><span class="meta pres-txt on">${ct.sub}</span></div>`:`${avatarHTML(ct.name)}<div><h4>${esc(ct.name)}</h4><span class="meta pres-txt ${o.on?'on':''}">${o.txt}</span></div>`;applyHerald(config.heraldData||null)}
+function paintChat(){
+  const wrap=$('#chat-wrap');if(!wrap)return;const showAuthor=activeChannel.indexOf('dm:')!==0;
+  wrap.innerHTML=curMsgs.map((m,idx)=>{const mine=m.author===user.name;const mact=mine?`<span class="mact"><button data-med="${idx}">править</button><button data-mdel="${idx}" style="color:var(--red)">удалить</button></span>`:'';const au=mine?`<span class="au" style="justify-content:flex-end">${mact}</span>`:(showAuthor?`<span class="au">${esc(m.author)}${mact}</span>`:'');return `<div class="msg ${mine?'me':'them'}">${au}${m.html||''}<small>${new Date(m.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</small></div>`}).join('')||'<p class="empty-note" style="align-self:center;margin:auto">Тишина в канале.</p>';
+  $$('#chat-wrap [data-mdel]').forEach(b=>b.onclick=()=>{const arr=curMsgs.slice();arr.splice(+b.dataset.mdel,1);curMsgs=arr;putMessages(activeChannel,arr);paintChat()});
+  $$('#chat-wrap [data-med]').forEach(b=>b.onclick=()=>{const w=$('#chat-writer-mount .writer');if(!w)return;w._editing={idx:+b.dataset.med};setWriterHTML(w,curMsgs[+b.dataset.med].html||'');w.scrollIntoView({behavior:'smooth'})});
+  wrap.scrollTop=wrap.scrollHeight;
 }
-function sendChat(){
-  const w=$('#chat-writer-mount .writer');const html=getWriterHTML(w);const media=w._media||null;
-  if(!html.trim()&&!media){toast('Пустое сообщение');return}
-  if(w._editing){const e=w._editing;const msg=chats[e.key][e.idx];msg.html=html;if(media)msg.media=media;w._editing=null;}else{chats[activeChannel]=chats[activeChannel]||[];chats[activeChannel].push({author:user.name,html,media,ts:Date.now()})}
-  SV('archive_chats',chats);clearWriter(w);w._media=null;renderChat();presenceTick();
+function ensureChatWriter(){if($('#chat-writer-mount .writer'))return;const w=mountWriter($('#chat-writer-mount'),'Написать в канал…',{withSend:true});$('#chat-send').onclick=sendChat}
+function renderChat(){switchChannel(activeChannel)}
+function putMessages(key,arr){FS&&db.collection('chats').doc(key).set({messages:arr},{merge:true})}
+function sendChat(){const w=$('#chat-writer-mount .writer');if(!w)return;const html=getWriterHTML(w);if(!html.trim())return;const arr=curMsgs.slice();
+  if(w._editing){arr[w._editing.idx].html=html;w._editing=null;}
+  else{arr.push({author:user.name,html,ts:Date.now()})}
+  curMsgs=arr;putMessages(activeChannel,arr);clearWriter(w);paintChat();presenceTick();
 }
-/* ========== Орден ========== */
+function openModal(html){$('#modal').innerHTML=html;$('#overlay').classList.add('show');$('#modal').querySelectorAll('[data-x]').forEach(b=>b.onclick=closeModal)}
+function closeModal(){$('#overlay').classList.remove('show');showKB(false)}
+function confirmModal(text,onYes){openModal(`<button class="x" data-x>×</button><h2 style="font-size:19px;text-transform:none">${esc(text)}</h2><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn danger" id="cfm-yes">Да, сделать</button></div>`);$('#cfm-yes').onclick=()=>{closeModal();onYes()}}
 function renderOrder(){
-  const sorted=roster.slice().sort((a,b)=>ri(b.rank)-ri(a.rank));
-  $('#order-list').innerHTML=sorted.map(m=>{const o=onlineInfo(m.name);const blocked=m.status==='Отстранён'||m.status==='Исключён';return `<div class="member ${blocked?'blocked':''} rv">${avatarHTML(m.name)}<div class="m-info"><h4>${esc(m.name)} <span class="tag rank">${m.rank}</span>${m.inCouncil?'<span class="tag council">Совет</span>':''}<span class="tag st-${m.status.replace(/ /g,'\\ ')}">${m.status}</span></h4>${m.title?'<span class="ttl">«'+esc(m.title)+'»':''}<div class="ln"><span class="pres-txt ${o.on?'on':''}">${o.txt}</span>${m.teacher?' · Учитель: '+esc(m.teacher):''}</div></div><div class="m-act"><button class="iconbtn" data-dm="${esc(m.name)}" title="Личный чат"><svg><use href="#i-chat"/></svg></button></div></div>`}).join('');
-  $$('#order-list [data-dm]').forEach(b=>b.onclick=()=>{if(b.dataset.dm===user.name){goto('profile');return}activeChannel='dm:'+b.dataset.dm;goto('chats')});
-  runReveals();
+  const box=$('#order-list');if(!box)return;const sorted=roster.slice().sort((a,b)=>ri(b.rank)-ri(a.rank));
+  box.innerHTML=sorted.map(m=>{const o=onlineInfo(m.name);const blocked=m.status==='Отстранён'||m.status==='Исключён';return `<div class="member ${blocked?'blocked':''} rv">${avatarHTML(m.name)}<div class="m-info"><h4>${esc(m.name)} <span class="tag rank">${m.rank}</span>${m.inCouncil?'<span class="tag council">Совет</span>':''}<span class="tag st-${m.status.replace(/ /g,'\\ ')}">${m.status}</span></h4>${m.title?`<span class="ttl">«${esc(m.title)}»</span>`:''}<div class="ln"><span class="pres-txt ${o.on?'on':''}">${o.txt}</span>${m.teacher?' · Учитель: '+esc(m.teacher):''}</div></div><div class="m-act"><button class="iconbtn" data-dm="${esc(m.name)}"><svg><use href="#i-chat"/></svg></button></div></div>`}).join('')||'<p class="empty-note">Реестр пуст.</p>';
+  $$('#order-list [data-dm]').forEach(b=>b.onclick=()=>{if(b.dataset.dm===user.name){goto('profile');return}switchChannel('dm:'+b.dataset.dm);goto('chats')});runReveals();
 }
-
-/* ========== таблица ========== */
 function renderProgress(){
-  const sorted=roster.slice().filter(m=>m.status!=='Исключён').sort((a,b)=>ri(b.rank)-ri(a.rank));
-  $('#progress-list').innerHTML=sorted.map(m=>{const idx=ri(m.rank);const avail=allLessons().filter(x=>x.l.minRank<=idx);const passed=avail.filter(x=>(m.progress||[]).includes(x.l.id)).length;const pct=avail.length?Math.round(passed/avail.length*100):0;const o=onlineInfo(m.name);const canEdit=isMaster(user);
+  const box=$('#progress-list');if(!box)return;const sorted=roster.slice().filter(m=>m.status!=='Исключён').sort((a,b)=>ri(b.rank)-ri(a.rank));
+  box.innerHTML=sorted.map(m=>{const idx=ri(m.rank);const avail=allLessons().filter(x=>x.l.minRank<=idx);const passed=avail.filter(x=>(m.progress||[]).includes(x.l.id)).length;const pct=avail.length?Math.round(passed/avail.length*100):0;const o=onlineInfo(m.name);const canEdit=isMaster(user);
     const marks=allLessons().map(({l})=>{const lock=l.minRank>idx;const pass=(m.progress||[]).includes(l.id);return `<span class="lmark ${lock?'lock':(pass?'pass':'')}">${lessonLabel(l)} ${lock?'🔒':(pass?'✓':'·')}</span>`}).join('');
-    return `<div class="prog-card rv">${avatarHTML(m.name)}<h4>${esc(m.name)} <span class="tag rank">${m.rank}</span><span class="pres-txt ${o.on?'on':''}">${o.txt}</span>${canEdit?`<button class="iconbtn" data-editp="${esc(m.name)}" title="Править">✎</button>`:''}<div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">${m.teacher?'Учитель: '+esc(m.teacher):'—'} · сдано ${passed} из ${avail.length} (${pct}%)</div><div class="bar"><div class="progress"><i style="width:${pct}%"></i></div></div><div class="lessons">${marks}</div></div>`}).join('');
-  $$('#progress-list [data-editp]').forEach(b=>b.onclick=()=>editProgress(b.dataset.editp));
-  runReveals();
+    return `<div class="prog-card rv"><div class="top">${avatarHTML(m.name)}<h4>${esc(m.name)} <span class="tag rank">${m.rank}</span></h4><span class="pres-txt ${o.on?'on':''}">${o.txt}</span>${canEdit?`<button class="iconbtn" data-editp="${esc(m.name)}"><svg><use href="#i-edit"/></svg></button>`:''}</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">${m.teacher?'Учитель: '+esc(m.teacher):'—'} · сдано ${passed} из ${avail.length} (${pct}%)</div><div class="bar"><div class="progress"><i style="width:${pct}%"></i></div></div><div class="lessons">${marks}</div></div>`}).join('')||'<p class="empty-note">Нет учеников.</p>';
+  $$('#progress-list [data-editp]').forEach(b=>b.onclick=()=>editProgress(b.dataset.editp));runReveals();
 }
 function editProgress(name){
   const m=findMember(name);if(!m)return;
-  const checks=allLessons().map(({y,c,l})=>`<label><input type="checkbox" data-li="${l.id}" ${(m.progress||[]).includes(l.id)?'checked':''} ${l.minRank>ri(m.rank)?'disabled':''}> ${esc(String(y.year))} · ${esc(c.title)} · ${lessonLabel(l)} — ${esc(l.title)}</label>`).join('');
-  openModal(`<button class="x" data-x>×</button><p class="kicker">Правка записи · Совет</p><h2 style="margin-top:6px">${esc(name)}</h2>
+  const checks=allLessons().map(({y,c,l})=>`<label><input type="checkbox" data-lid="${l.id}" ${(m.progress||[]).includes(l.id)?'checked':''} ${l.minRank>ri(m.rank)?'disabled':''}> ${esc(String(y.year))} · ${esc(c.title)} · ${lessonLabel(l)} — ${esc(l.title)}</label>`).join('');
+  openModal(`<button class="x" data-x>×</button><h2>${esc(name)}</h2>
     <div class="field sel"><label>Ранг</label><select id="ep-rank">${RANKS.map((r,i)=>`<option value="${r}" ${r===m.rank?'selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field sel"><label>Статус в Ордене</label><select id="ep-status">${ROLE_STATUS.map(s=>`<option ${s===m.status?'selected':''}>${s}</option>`).join('')}</select></div>
-    <div class="field"><label>Звание / титул</label><input id="ep-title" type="text" value="${esc(m.title||'')}"></div>
+    <div class="field"><label>Звание</label><input id="ep-title" type="text" value="${esc(m.title||'')}"></div>
     <div class="field sel"><label>Учитель</label><select id="ep-teacher"><option value="">— нет —</option>${mastersList().filter(x=>x.name!==name).map(x=>`<option ${x.name===m.teacher?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
     <label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" ${m.inCouncil?'checked':''}><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label>
-    <div class="field"><label>Сданные уроки</label><div class="checks">${checks}</div></div>
+    <div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">${checks}</div></div>
     <button class="btn" id="ep-save">Сохранить решение</button>`);
-  $('#ep-save').onclick=()=>{
-    m.rank=$('#ep-rank').value;m.status=$('#ep-status').value;m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher').value;m.inCouncil=$('#ep-council').checked;
-    m.progress=$$('#modal [data-li]:checked').map(cb=>cb.dataset.li);
-    putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) запись «'+esc(name)+'»: '+m.rank+' / '+m.status);
-    closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels()}toast('Запись обновлена ✦');
-  };
+  $('#ep-save').onclick=()=>{m.rank=$('#ep-rank').value;m.status=$('#ep-status').value;m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher').value;m.inCouncil=$('#ep-council').checked;m.progress=$$('#ep-checks [data-lid]:checked').map(cb=>cb.dataset.lid);putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»');closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels();buildTree()}};
 }
-
-/* ========== админка ========== */
 function renderAdmin(){
-  if(!isMaster(user)){$('#admin-roster').innerHTML='<p style="color:var(--ink-2)">Доступ только для ранга Мастер и выше.</p>';return}
+  const box=$('#admin-roster');if(!box)return;
+  if(!isMaster(user)){box.innerHTML='<p class="empty-note">Доступ только для ранга Мастер и выше.</p>';$('#council-log').innerHTML='';return}
   $('#roster-count').textContent=roster.length+' в реестре';
-  $('#admin-roster').innerHTML=roster.map(m=>{const blocked=m.status==='Отстранён'||m.status==='Исключён';const o=onlineInfo(m.name);return `<div class="member ${blocked?'blocked':''} rv">${avatarHTML(m.name)}<div class="m-info"><h4>${esc(m.name)} <span class="tag rank">${m.rank}</span>${m.inCouncil?'<span class="tag council">Совет</span>':''}<span class="tag st-${m.status.replace(/ /g,'\\ ')}">${m.status}</span></h4>${m.title?'<span class="ttl">«'+esc(m.title)+'»':''}<div class="ln"><span class="pres-txt ${o.on?'on':''}">${o.txt}</div></div><div class="m-act"><button class="iconbtn" data-prom="${esc(m.name)}" title="Повысить">▲</button><button class="iconbtn" data-dem="${esc(m.name)}" title="Понизить">▼</button><button class="iconbtn" data-editp="${esc(m.name)}" title="Править">✎</button><button class="iconbtn dng" data-block="${esc(m.name)}" title="${blocked?'Восстановить':'Отстранить'}" style="color:var(--red)"><svg><use href="#i-lock"/></svg></button></div></div>`}).join('');
+  box.innerHTML=roster.map(m=>{const blocked=m.status==='Отстранён'||m.status==='Исключён';const o=onlineInfo(m.name);return `<div class="member ${blocked?'blocked':''} rv">${avatarHTML(m.name)}<div class="m-info"><h4>${esc(m.name)} <span class="tag rank">${m.rank}</span>${m.inCouncil?'<span class="tag council">Совет</span>':''}<span class="tag st-${m.status.replace(/ /g,'\\ ')}">${m.status}</span></h4>${m.title?`<span class="ttl">«${esc(m.title)}»</span>`:''}<div class="ln"><span class="pres-txt ${o.on?'on':''}">${o.txt}</span></div></div><div class="m-act"><button class="iconbtn" data-prom="${esc(m.name)}">▲</button><button class="iconbtn" data-dem="${esc(m.name)}">▼</button><button class="iconbtn" data-editp="${esc(m.name)}"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-block="${esc(m.name)}"><svg><use href="#i-lock"/></svg></button></div></div>`}).join('')||'<p class="empty-note">Реестр пуст.</p>';
   $$('#admin-roster [data-prom]').forEach(b=>b.onclick=()=>shiftRank(b.dataset.prom,1));
   $$('#admin-roster [data-dem]').forEach(b=>b.onclick=()=>shiftRank(b.dataset.dem,-1));
   $$('#admin-roster [data-editp]').forEach(b=>b.onclick=()=>editProgress(b.dataset.editp));
   $$('#admin-roster [data-block]').forEach(b=>b.onclick=()=>toggleBlock(b.dataset.block));
-  $('#council-log').innerHTML=councilLog.length?councilLog.map(l=>`<div class="li">${new Date(l.t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · ${l.text}</div>`).join(''):'<div class="li">Журнал пуст.</div>';
-  runReveals();
+  $('#council-log').innerHTML=councilLog.length?councilLog.map(l=>`<div class="li">${new Date(l.t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · ${l.text}</div>`).join(''):'<div class="li">Журнал пуст.</div>';runReveals();
 }
-function shiftRank(name,d){const m=findMember(name);const i=Math.max(0,Math.min(RANKS.length-1,ri(m.rank)+d);m.rank=RANKS[i];putMember(m);logCouncil('<b>'+esc(user.name)+'</b> → ранг «'+esc(name)+'»: '+m.rank);if(name===user.name){user.rank=m.rank;openApp()}else{renderAdmin();renderOrder();renderProgress();buildChannels()}toast('Ранг изменён: '+m.rank)}
-function toggleBlock(name){const m=findMember(name);m.status=m.status==='Отстранён'||m.status==='Исключён'?'Ученик':'Отстранён';putMember(m);logCouncil('<b>'+esc(user.name)+'</b> '+(!m.status?'восстановил(а)':'отстранил(а)')+' «'+esc(name)+'»');if(name===user.name)toast('Ты '+(!m.status?'восстановил(а)':'отстранил(а)')+' сам(а) себя — при следующем входе Врата '+(!m.status?'откроются':'закроются')+'.');renderAdmin();renderOrder();renderProgress()}
+function shiftRank(name,d){const m=findMember(name);if(!m)return;const i=Math.max(0,Math.min(RANKS.length-1,ri(m.rank)+d));m.rank=RANKS[i];putMember(m);logCouncil('<b>'+esc(user.name)+'</b> → ранг «'+esc(name)+'»: '+m.rank);if(name===user.name){user.rank=m.rank;openApp()}else{renderAdmin();renderOrder();renderProgress();buildChannels();buildTree()}}
+function toggleBlock(name){const m=findMember(name);if(!m)return;if(m.status==='Отстранён'||m.status==='Исключён'){m.status='Ученик';logCouncil('<b>'+esc(user.name)+'</b> восстановил(а) «'+esc(name)+'»')}else{m.status='Отстранён';logCouncil('<b>'+esc(user.name)+'</b> отстранил(а) «'+esc(name)+'»')}putMember(m);renderAdmin();renderOrder();renderProgress()}
 $('#add-member-btn').onclick=()=>{
-  openModal(`<button class="x" data-x>×</button><p class="kicker">Приём в Орден</p><h2 style="margin-top:6px">Новый член</h2>
-    <div class="field"><label>Имя</label><input id="nm-name" type="text" placeholder="Имя Джедая"></div>
+  openModal(`<button class="x" data-x>×</button><h2>Новый член</h2>
+    <div class="field"><label>Имя</label><input id="nm-name" type="text"></div>
     <div class="field sel"><label>Ранг</label><select id="nm-rank">${RANKS.map((r,i)=>`<option value="${r}" ${i===0?'selected':''}>${r}</option>`).join('')}</select></div>
     <div class="field sel"><label>Статус</label><select id="nm-status">${ROLE_STATUS.map(s=>`<option>${s}</option>`).join('')}</select></div>
     <div class="field"><label>Звание</label><input id="nm-title" type="text"></div>
     <button class="btn" id="nm-save">Принять в Орден</button>`);
-  $('#nm-save').onclick=()=>{
-    const n=$('#nm-name').value.trim();if(!n){toast('Введи имя');return}if(findMember(n)){toast('Такое имя уже в реестре');return}
-    const rank=$('#nm-rank').val();roster.push({name:n,rank,status:$('#nm-status').val(),title:$('#nm-title').val(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000});
-    putMember(roster[roster.length-1]);logCouncil('<b>'+esc(user.name)+'</b> принял(а) в Орден «'+esc(n)+'» · '+rank);
-    closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();toast('Новый член внесён ✦');
-  };
+  $('#nm-save').onclick=()=>{const n=$('#nm-name').value.trim();if(!n)return;if(findMember(n))return;const rank=$('#nm-rank').value;const m={name:n,rank,status:$('#nm-status').value,title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000};putMember(m);logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'»');closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();};
 };
-
-/* ========== профиль ========== */
+$('#gen-code').onclick=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='JEDI-';for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)];config.codes=config.codes||{};config.codes[s]=true;putConfig();openModal(`<button class="x" data-x>×</button><h2>Код-приглашение</h2><div class="codebox">${s}</div>`)};
 function renderProfile(){
   const me=findMember(user.name);if(!me)return;
   const idx=ri(user.rank);const avail=allLessons().filter(x=>x.l.minRank<=idx);const passed=avail.filter(x=>(me.progress||[]).includes(x.l.id)).length;
-  $('#st-passed').textContent=passed;$('#st-left').textContent=Math.max(0,avail.length-passed);$('#st-rank').textContent=(ri(user.rank)+1)+'/'+RANKS.length;
+  $('#st-passed').textContent=passed;$('#st-left').textContent=Math.max(0,avail.length-passed);
   $('#p-title').textContent=me.title?('«'+me.title+'»'):'';
-  $('#p-teacher-line').style.display=me.teacher?'block':'none';$('#p-teacher-line').textContent=me.teacher?('Наставник: '+me.teacher):'';
-  // аватарка
   const img=$('#profile-ava-img'),ph=$('#profile-ava-ph');
   if(me.avatarUrl){img.src=me.avatarUrl;img.style.display='block';ph.style.display='none'}else{img.style.display='none';ph.style.display='grid'}
-  // био
+  const tm=$('#teacher-mount');
+  if(isStudent(user)){tm.innerHTML=`<div class="field sel"><label>Мой Учитель</label><select id="pf-teacher"><option value="">— пока нет —</option>${mastersList().map(x=>`<option ${x.name===me.teacher?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`}
+  else{tm.innerHTML=''}
+  $('#p-teacher-line').style.display=me.teacher?'block':'none';$('#p-teacher-line').textContent=me.teacher?('Наставник: '+me.teacher):'';
   const bm=$('#bio-mount');
-  bm.innerHTML=`<div id="bio-view" class="bio">${me.bio||'<p style="color:var(--ink-2)">Биография пуста. Нажми «Редактировать», чтобы рассказать о себе.</p>'}</div><div id="bio-edit" style="display:none;margin-top:10px"></div><div style="margin-top:10px"><button class="btn ghost small" id="bio-toggle">Редактировать биографию</button></div>`;
-  $('#bio-toggle').onclick=()=>{
-    const edit=$('#bio-edit'),view=$('#bio-view');
-    if(edit.style.display==='none'){
-      edit.style.display='block';view.style.display='none';
-      const w=mountWriter(edit,'Расскажи о своём пути…',{inlineMedia:true});setWriterHTML(w,me.bio||'');
-    }else{
-      edit.style.display='none';view.style.display='block';
-    }
-  };
+  bm.innerHTML=`<div id="bio-view" class="bio">${me.bio||'<p>Биография пуста.</p>'}</div><div id="bio-edit" style="display:none;margin-top:10px"></div><div style="margin-top:10px"><button class="btn ghost small" id="bio-toggle">Редактировать биографию</button></div>`;
+  $('#bio-toggle').onclick=()=>{const edit=$('#bio-edit'),view=$('#bio-view');if(edit.style.display==='none'){edit.style.display='block';view.style.display='none';const w=mountWriter(edit,'Расскажи о своём пути…',{});setWriterHTML(w,me.bio||'');$('#bio-toggle').textContent='Скрыть редактор'}else{edit.style.display='none';view.style.display='block';$('#bio-toggle').textContent='Редактировать биографию'}};
 }
 $('#profile-ava-wrap').addEventListener('click',()=>$('#avatar-input').click());
-$('#avatar-input').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;readImageSmall(f,d=>{const me=findMember(user.name);me.avatarUrl=d;putMember(me);renderProfile();renderOrder();toast('Аватарка обновлена ✦')})});
-$('#save-profile').onclick=()=>{
-  const me=findMember(user.name);
-  const edit=$('#bio-edit');
-  if(edit&&edit.style.display!=='none')me.bio=getWriterHTML(edit.querySelector('.writer'));
-  const t=$('#pf-teacher');if(t)me.teacher=t.value;
-  putMember(me);renderProfile();renderProgress();renderOrder();toast('Профиль сохранён ✦');
-};
-$('#logout').onclick=()=>{const me=findMember(user.name);if(me){me.lastSeen=Date.now()-999999;putMember({name:user.name,lastSeen:me.lastSeen})}localStorage.removeItem('archive_user');location.reload()};
+$('#avatar-input').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;readImageSmall(f,d=>{const me=findMember(user.name);if(!me)return;me.avatarUrl=d;putMember({name:user.name,avatarUrl:d});renderProfile();renderOrder();toast('Аватар обновлён ✦')},220,.6)});
+$('#save-profile').onclick=()=>{const me=findMember(user.name);if(!me)return;const edit=$('#bio-edit');if(edit&&edit.style.display!=='none')me.bio=getWriterHTML(edit.querySelector('.writer'));const t=$('#pf-teacher');if(t)me.teacher=t.value;putMember(me);renderProfile();renderProgress();renderOrder();toast('Профиль сохранён ✦')};
+function doLogout(){presenceTick();const me=findMember(user.name);if(me){me.lastSeen=Date.now()-999999;putMember({name:user.name,lastSeen:me.lastSeen})}localStorage.removeItem('archive_user');location.reload()}
+['#logout','#hdr-logout'].forEach(s=>{const el=$(s);if(el)el.onclick=doLogout});
+let fsZoom=parseFloat(localStorage.getItem('archive_zoom')||'1');if(isNaN(fsZoom))fsZoom=1;
+function applyZoom(){document.documentElement.style.zoom=String(fsZoom)}
+function bumpZoom(d){fsZoom=Math.min(1.6,Math.max(0.85,+(fsZoom+d).toFixed(2)));localStorage.setItem('archive_zoom',String(fsZoom));applyZoom();}
+applyZoom();
+$('#fs-minus').onclick=()=>bumpZoom(-0.1);
+$('#fs-plus').onclick=()=>bumpZoom(0.1);
+(function autoEnter(){const saved=LS('archive_user',null);if(saved&&saved.name){user={name:saved.name,rank:saved.rank||'Падаван'};$('#gate').classList.remove('active');openApp();window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),60)}})();
+setInterval(()=>{if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
 
-/* ========== модалки ========== */
-function openModal(html){$('#modal').innerHTML=html;$('#overlay').classList.add('show');$('#modal').querySelectorAll('[data-x]').forEach(b=>b.onclick=closeModal)}
-function closeModal(){$('#overlay').classList.remove('show');showKB(false)}
-function confirmModal(text,onYes){openModal(`<button class="x" data-x>×</button><p class="kicker">Подтверждение</p><h2 style="margin-top:6px;font-size:19px">${esc(text)}</h2><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn danger" id="cfm-yes">Да, сделать</button></div>`);$('#cfm-yes').onclick=()=>{closeModal();onYes()}}
-$('#overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});
-
-/* ========== heartbeat ========== */
-setInterval(()=>{if($('#s-order').classList.contains('active'))renderOrder();if($('#s-chats').classList.contains('active'))buildChannels()},15000);
-setInterval(presenceTick,20000);
-
-/* ========== библиотека ========== */
-document.addEventListener('click',e=>{const ch=e.target.closest('.chip');if(ch){libFilter=ch.dataset.f;renderLibrary()}});
-document.addEventListener('click',e=>{const btn=e.target.closest('.dl');if(btn){if(btn.dataset.busy)return;btn.dataset.busy=1;btn.querySelector('span').textContent='Загрузка…';const bar=btn.querySelector('i');let w=0;const t=setInterval(()=>{w+=4+Math.random()*10;if(w>=100){clearInterval(t);btn.classList.add('done');btn.innerHTML='✓ В оффлайне';toast('Труд сохранён — читай без сети')}else bar.style.width=w+'%'},90)});
-
-/* ========== PWA: добавим манифест и воркер внутрь HTML ========== */
-// вставим манифест в head
+/* ========== PWA: манифест и воркер вшиты внутрь ========== */
 const mf = {
   short_name: 'Акаша',
   name: 'Архив Ордена Вольных Джедаев',
-  description: 'Облачная академия Ордена Вольных Джедаев',
   start_url: './',
   scope: './',
   display: 'standalone',
   background_color: '#FBF7EC',
   theme_color: '#B8912F',
   icons: [
-    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" fill="%23FBF7EC"/><path d="M96 30 L160 160 L32 160 Z" fill="%23B8912F"/></svg>', sizes: '192x192', type: 'image/svg+xml' },
-    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="%23FBF7EC"/><path d="M256 80 L432 432 L72 432 Z" fill="%23B8912F"/></svg>', sizes: '512x512', type: 'image/svg+xml' }
+    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" fill="%23FBF7EC"/><circle cx="96" cy="96" r="60" fill="%23B8912F"/></svg>', sizes: '192x192', type: 'image/svg+xml' },
+    { src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="%23FBF7EC"/><circle cx="256" cy="256" r="160" fill="%23B8912F"/></svg>', sizes: '512x512', type: 'image/svg+xml' }
   ]
 };
 const ml = document.createElement('link'); ml.rel='manifest'; ml.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(mf)); document.head.appendChild(ml);
-
-// воркер вставим через blob
 const swBlob = new Blob([`
   const CACHE_NAME = 'akasha-v1';
-  const urlsToCache = [
-    './',
-    './index.html',
-    'https://fonts.googleapis.com/css2?family=Forum&family=Jost:wght@300;400;500;600&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap',
-    'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
-    'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js'
-  ];
+  const urlsToCache = ['./', './index.html'];
   self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache))));
   self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
 `], {type: 'application/javascript'});
 const swURL = URL.createObjectURL(swBlob);
-if('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).then(r => console.log('SW registered:', r.scope)).catch(e => console.log('SW failed:', e));
-
+if('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).catch(e => console.log('SW failed:', e));
 </script>
 </body>
 </html>
