@@ -635,6 +635,54 @@ const swBlob = new Blob([`
 `], {type: 'application/javascript'});
 const swURL = URL.createObjectURL(swBlob);
 if('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).catch(e => console.log('SW failed:', e));
+  /* ===== ФИКС: Врата уходят с дороги и при ручном, и при авто-входе ===== */
+(function gateFix(){
+  function hideGateHard(){
+    var g=document.getElementById('gate');
+    if(!g) return;
+    g.classList.remove('active');
+    g.style.position='fixed';g.style.left='0';g.style.top='0';g.style.right='0';g.style.bottom='0';
+    g.style.margin='0';g.style.zIndex='9999';g.style.transition='opacity .4s ease';
+    requestAnimationFrame(function(){requestAnimationFrame(function(){g.style.opacity='0';});});
+    setTimeout(function(){g.style.display='none';window.scrollTo(0,0);},420);
+  }
+  function topNow(){window.scrollTo(0,0);requestAnimationFrame(function(){window.scrollTo(0,0);});setTimeout(function(){window.scrollTo(0,0);},60);setTimeout(function(){window.scrollTo(0,0);},300);}
+
+  /* ручной вход — ловим клик по кнопке ДО старого обработчика */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest||!e.target.closest('#enter')) return;
+    e.preventDefault();e.stopImmediatePropagation();
+    (async function(){
+      var n=$('#f-name').value.trim(),c=$('#f-code').value.trim(),msg=$('#gate-msg');msg.textContent='';
+      if(!n){$('#fld-name').classList.add('err');setTimeout(function(){$('#fld-name').classList.remove('err');},450);msg.textContent='Назови себя, путник.';return;}
+      if(!c){$('#fld-code').classList.add('err');setTimeout(function(){$('#fld-code').classList.remove('err');},450);msg.textContent='Предъяви код-приглашение.';return;}
+      var m=findMember(n);
+      if(m){if(m.status==='Отстранён'){msg.textContent='Врата закрыты: допуск приостановлен Советом.';return;}if(m.status==='Исключён'){msg.textContent='Врата закрыты: ты не числишься в Ордене.';return;}}
+      else{
+        if(!config.codes||!Object.keys(config.codes).length){try{var cd=await M('config').get();if(cd.exists)config=Object.assign({codes:{},heraldUrl:'',heraldData:''},cd.data());}catch(_){}}
+        if(!config.codes||!config.codes[c]){msg.textContent='Неверный код-приглашение. Обратись к Мастеру.';return;}
+        var rank=RANKS[+$('#f-rank').value];m={name:n,rank:rank,status:'Ученик',title:'',inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()};putMember(m);logCouncil('В Орден принят(а) <b>'+esc(n)+'</b> · ранг '+rank);
+      }
+      user={name:m.name,rank:m.rank};
+      if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
+      if(document.activeElement)document.activeElement.blur();
+      window.scrollTo(0,0);openApp();hideGateHard();topNow();
+    })();
+  },true);
+
+  /* Enter в полях имени/кода — ведём сами */
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    var t=e.target;if(!t||!t.id) return;
+    if(t.id!=='f-name'&&t.id!=='f-code') return;
+    e.preventDefault();e.stopImmediatePropagation();
+    var b=document.getElementById('enter');if(b)b.click();
+  },true);
+
+  /* страховка для авто-входа: приложение уже открыто при загрузке — Врата долой */
+  function ensure(){if($('#app')&&$('#app').classList.contains('active')){var g=document.getElementById('gate');if(g&&g.style.display!=='none'){g.classList.remove('active');g.style.display='none';}topNow();}}
+  ensure();setTimeout(ensure,80);setTimeout(ensure,350);setTimeout(ensure,900);
+})();
 </script>
 </body>
 </html>
