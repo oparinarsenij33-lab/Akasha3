@@ -860,6 +860,64 @@ function getStatusClass(s) {
     };
   };
 })();
+  /* ===== ПАТЧ 7: Герб — единый, общий, только Совет может установить ===== */
+// 1) Обновляем отображение герба на Вратах
+document.addEventListener('DOMContentLoaded', () => {
+  const emblem = document.querySelector('.emblem');
+  const heraldTrigger = emblem?.querySelector('.herald-trigger');
+  const heraldPh = emblem?.querySelector('.herald-ph');
+
+  if (!emblem || !heraldPh) return;
+
+  // Если герб не установлен — показываем статичное сообщение (даже для гостей)
+  if (!heraldSrc()) {
+    heraldPh.innerHTML = `<span class="ph-txt">Герб Ордена<br>установит Совет</span>`;
+    if (heraldTrigger) {
+      heraldTrigger.style.pointerEvents = 'none';
+      heraldTrigger.style.cursor = 'default';
+    }
+    return;
+  }
+
+  // Если герб есть — показываем его, и разрешаем загрузку ТОЛЬКО Совету
+  if (user && isCouncil(user)) {
+    // Совет видит кнопку "Загрузить фото"
+    if (heraldTrigger) {
+      heraldTrigger.style.pointerEvents = 'auto';
+      heraldTrigger.style.cursor = 'pointer';
+    }
+  } else {
+    // Все остальные — только просмотр, без интеракции
+    if (heraldTrigger) {
+      heraldTrigger.style.pointerEvents = 'none';
+      heraldTrigger.style.cursor = 'default';
+    }
+  }
+});
+
+// 2) Блокируем загрузку герба вне Совета
+$('#herald-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f || !f.type.startsWith('image/')) { e.target.value = ''; return; }
+  if (!user || !isCouncil(user)) {
+    toast('Только члены Совета могут изменять Герб Ордена.');
+    e.target.value = '';
+    return;
+  }
+
+  readImageSmall(f, d => {
+    applyHerald(d);
+    config.heraldData = d;
+    putConfig(); // → обновляет для всех в реальном времени
+    toast('Герб Ордена обновлён для всего Ордена ✦');
+  }, 360, .82);
+});
+
+// 3) Убедимся, что при входе герб берётся из облака, а не из localStorage
+function heraldSrc() {
+  return config.heraldData || null;
+}
+applyHerald(heraldSrc());
 </script>
 </body>
 </html>
