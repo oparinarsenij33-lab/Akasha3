@@ -1,21 +1,25 @@
 {
-  "name": "Архив Ордена Вольных Джедаев",
+  "name": "Архив · Орден Вольных Джедаев · Акаша",
   "short_name": "Акаша",
-  "start_url": "/",
+  "description": "Облачная академия Ордена Вольных Джедаев. Знание — свет, что несёт покой.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#FBF7EC",
   "theme_color": "#B8912F",
-  "description": "Облачная академия Ордена Вольных Джедаев. Знание — свет, что несёт покой.",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
