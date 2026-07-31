@@ -354,8 +354,9 @@ async function enter(){
     const rank=RANKS[+$('#f-rank').value];m={name:n,rank,status:'Ученик',title:'',inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()};putMember(m);logCouncil('В Орден принят(а) <b>'+esc(n)+'</b> · ранг '+rank);
   }
   user={name:m.name,rank:m.rank};if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
-  if(document.activeElement)document.activeElement.blur();window.scrollTo(0,0);openApp();
-  $('#gate').classList.remove('active');window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));
+  if(document.activeElement)document.activeElement.blur();
+  var g=$('#gate');g.classList.remove('active');g.style.display='none';
+  window.scrollTo(0,0);openApp();window.scrollTo(0,0);setTimeout(function(){window.scrollTo(0,0);},60);
 }
 $('#enter').onclick=enter;['#f-name','#f-code'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')enter()}));
 function openApp(){
