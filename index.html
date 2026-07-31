@@ -355,9 +355,7 @@ async function enter(){
   }
   user={name:m.name,rank:m.rank};if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
   if(document.activeElement)document.activeElement.blur();window.scrollTo(0,0);openApp();
-  const gate=$('#gate');gate.style.position='fixed';gate.style.left='0';gate.style.top='0';gate.style.right='0';gate.style.bottom='0';gate.style.margin='0';gate.style.zIndex='9999';gate.style.transition='opacity .45s ease';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{gate.style.opacity='0';}));
-  setTimeout(()=>{gate.classList.remove('active');gate.style.display='none';window.scrollTo(0,0);},480);
+  $('#gate').classList.remove('active');window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));
 }
 $('#enter').onclick=enter;['#f-name','#f-code'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')enter()}));
 function openApp(){
