@@ -853,6 +853,106 @@ function editProgress(name){
   $('#ep-save').onclick=function(){ m.rank=$('#ep-rank').value; m.status=$('#ep-status').value; m.title=$('#ep-title').value.trim(); m.teacher=$('#ep-teacher').value; m.inCouncil=$('#ep-council').checked; m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid;}); putMember(m); logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»'); closeModal(); if(name===user.name){ user.rank=m.rank; openApp(); } else { renderProgress(); renderOrder(); renderAdmin(); buildChannels(); buildTree(); } };
 }
 buildTree();
+  /* ===== ПАТЧ: статус-вердикты Совета, исключение из Ордена, коды от Мастера ===== */
+
+/* --- правка записи: статус = панель вердиктов (не dropdown), только Совет --- */
+function editProgress(name){
+  var m=findMember(name); if(!m) return;
+  var checks=allLessons().map(function(o){ var done=(m.progress||[]).indexOf(o.l.id)>=0; return '<label><input type="checkbox" data-lid="'+o.l.id+'" '+(done?'checked':'')+'> '+esc(String(o.y.year))+' · '+esc(o.s.title)+' · '+esc(o.c.title)+' · '+lessonLabel(o.l)+' — '+esc(o.l.title)+'</label>'; }).join('');
+  openModal('<button class="x" data-x>×</button><p class="kicker">Решение Совета</p><h2 style="margin-top:6px">'+esc(name)+'</h2>'+
+    '<div class="field sel"><label>Ранг</label><select id="ep-rank">'+RANKS.map(function(r){return '<option value="'+r+'" '+(r===m.rank?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Статус в Ордене (выдаёт Совет)</label><div class="chips" id="ep-status-chips" style="margin:8px 0 0">'+ROLE_STATUS.map(function(s){return '<button type="button" class="chip '+(s===(m.status||'Ученик')?'on':'')+'" data-st="'+esc(s)+'">'+esc(s)+'</button>';}).join('')+'</div><input type="hidden" id="ep-status" value="'+esc(m.status||'Ученик')+'"></div>'+
+    '<div class="field"><label>Звание / титул (выдаёт Совет)</label><input id="ep-title" type="text" value="'+esc(m.title||'')+'"></div>'+
+    '<div class="field sel"><label>Учитель</label><select id="ep-teacher"><option value="">— нет —</option>'+mastersList().filter(function(x){return x.name!==name;}).map(function(x){return '<option '+(x.name===m.teacher?'selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></div>'+
+    '<label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" '+(m.inCouncil?'checked':'')+'><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label>'+
+    '<div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">'+checks+'</div></div>'+
+    '<button class="btn" id="ep-save">Сохранить решение Совета</button>');
+  $$('#ep-status-chips .chip').forEach(function(b){ b.onclick=function(){ $$('#ep-status-chips .chip').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); $('#ep-status').value=b.dataset.st; }; });
+  $('#ep-save').onclick=function(){
+    m.rank=$('#ep-rank').value; m.status=$('#ep-status').value; m.title=$('#ep-title').value.trim();
+    m.teacher=$('#ep-teacher').value; m.inCouncil=$('#ep-council').checked;
+    m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid;});
+    putMember(m); logCouncil('<b>'+esc(user.name)+'</b> вынес(ла) решение по «'+esc(name)+'»: '+m.rank+' / '+m.status);
+    closeModal();
+    if(name===user.name){ user.rank=m.rank; openApp(); } else { renderProgress(); renderOrder(); renderAdmin(); buildChannels(); buildTree(); }
+    toast('Решение Совета сохранено ✦');
+  };
+}
+
+/* --- реестр Совета: + кнопка исключения из Ордена --- */
+function renderAdmin(){
+  var box=$('#admin-roster'); if(!box) return;
+  if(!isMaster(user)){ box.innerHTML='<p class="empty-note">Доступ только для ранга Мастер и выше.</p>'; $('#council-log').innerHTML=''; return; }
+  $('#roster-count').textContent=roster.length+' в реестре';
+  box.innerHTML=roster.map(function(m){ var blocked=m.status==='Отстранён'||m.status==='Исключён'; var o=onlineInfo(m.name);
+    return '<div class="member '+(blocked?'blocked':'')+' rv">'+avatarHTML(m.name)+'<div class="m-info"><h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span>'+(m.inCouncil?'<span class="tag council">Совет</span>':'')+'<span class="tag st-'+m.status.replace(/ /g,'\\ ')+'">'+m.status+'</span></h4>'+(m.title?'<span class="ttl">«'+esc(m.title)+'»</span>':'')+'<div class="ln"><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span></div></div><div class="m-act"><button class="iconbtn" data-prom="'+esc(m.name)+'" title="Повысить ранг">▲</button><button class="iconbtn" data-dem="'+esc(m.name)+'" title="Понизить ранг">▼</button><button class="iconbtn" data-editp="'+esc(m.name)+'" title="Править запись"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-block="'+esc(m.name)+'" title="'+(blocked?'Восстановить':'Отстранить')+'"><svg><use href="#i-lock"/></svg></button><button class="iconbtn dng" data-del="'+esc(m.name)+'" title="Исключить из Ордена"><svg><use href="#i-trash"/></svg></button></div></div>'; }).join('')||'<p class="empty-note">Реестр пуст.</p>';
+  $$('#admin-roster [data-prom]').forEach(function(b){ b.onclick=function(){ shiftRank(b.dataset.prom,1); }; });
+  $$('#admin-roster [data-dem]').forEach(function(b){ b.onclick=function(){ shiftRank(b.dataset.dem,-1); }; });
+  $$('#admin-roster [data-editp]').forEach(function(b){ b.onclick=function(){ editProgress(b.dataset.editp); }; });
+  $$('#admin-roster [data-block]').forEach(function(b){ b.onclick=function(){ toggleBlock(b.dataset.block); }; });
+  $$('#admin-roster [data-del]').forEach(function(b){ b.onclick=function(){
+    var nm=b.dataset.del;
+    if(nm===user.name){ toast('Себя через реестр не исключают — используй «Покинуть Архив».'); return; }
+    confirmModal('Исключить «'+nm+'» из Ордена навсегда? Запись и все её коды-приглашения будут удалены.', function(){
+      var changed=false; Object.keys(config.codes||{}).forEach(function(k){ var r=config.codes[k]; if(r && r!==true && String(r.name||'').toLowerCase()===nm.toLowerCase()){ delete config.codes[k]; changed=true; } });
+      if(changed) putConfig();
+      roster=roster.filter(function(x){ return x.name.toLowerCase()!==nm.toLowerCase(); });
+      db.collection('members').doc(mid(nm)).delete().then(function(){
+        logCouncil('<b>'+esc(user.name)+'</b> исключил(а) «'+esc(nm)+'» из Ордена');
+        renderAdmin(); renderOrder(); renderProgress(); buildChannels(); toast('Джедай исключён из Ордена');
+      }).catch(function(){ toast('Ошибка удаления из облака'); });
+    });
+  }; });
+  $('#council-log').innerHTML=councilLog.length?councilLog.map(function(l){ return '<div class="li">'+new Date(l.t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · '+l.text+'</div>'; }).join(''):'<div class="li">Журнал пуст.</div>';
+  runReveals();
+}
+
+/* --- приём в Орден: статус авто «Ученик», код задаёт Мастер сам --- */
+$('#add-member-btn').onclick=function(){
+  openModal('<button class="x" data-x>×</button><p class="kicker">Приём в Орден</p><h2 style="margin-top:6px">Новый член</h2>'+
+    '<div class="field"><label>Имя</label><input id="nm-name" type="text" placeholder="Имя Джедая"></div>'+
+    '<div class="field sel"><label>Ранг (ступень допуска)</label><select id="nm-rank">'+RANKS.map(function(r,i){return '<option value="'+r+'" '+(i===0?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Звание / титул (необяз.)</label><input id="nm-title" type="text"></div>'+
+    '<div class="field"><label>Код-приглашение (придумай сам)</label><input id="nm-code" type="text" placeholder="Напр. JEDI-KAIRA"></div>'+
+    '<p class="rank-hint" style="color:var(--ink-2)">Статус при приёме — «Ученик». Совет повысит его отдельным решением позже.</p>'+
+    '<button class="btn" id="nm-save">Принять в Орден</button>');
+  $('#nm-save').onclick=function(){
+    var n=$('#nm-name').value.trim(); if(!n){ toast('Введи имя'); return; } if(findMember(n)){ toast('Такое имя уже в реестре'); return; }
+    var code=$('#nm-code').value.trim(); if(!code){ toast('Задай код-приглашение'); return; }
+    if(config.codes && config.codes[code]){ toast('Этот код уже занят. Придумай другой.'); return; }
+    var rank=$('#nm-rank').value;
+    var m={name:n,rank:rank,status:'Ученик',title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000};
+    putMember(m);
+    config.codes=config.codes||{}; config.codes[code]={name:n}; putConfig();
+    logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'» · '+rank+' · код «'+esc(code)+'»');
+    closeModal(); renderAdmin(); renderOrder(); renderProgress(); buildChannels();
+    openModal('<button class="x" data-x>×</button><h2>«'+esc(n)+'» принят(а)</h2><p style="color:var(--ink-2);margin:8px 0">Ранг «'+rank+'», статус «Ученик». Передай Джедаю этот код лично — он привязан именно к этому имени:</p><div class="codebox">'+esc(code)+'</div>');
+  };
+};
+
+/* --- выдать код: Мастер сам вписывает код и привязывает к конкретному Джедаю --- */
+$('#gen-code').onclick=function(){
+  if(!roster.length){ toast('Реестр пуст'); return; }
+  openModal('<button class="x" data-x>×</button><p class="kicker">Выдача кода</p><h2 style="margin-top:6px">Код-приглашение</h2>'+
+    '<div class="field sel"><label>Кому</label><select id="gc-who">'+roster.map(function(m){return '<option value="'+esc(m.name)+'">'+esc(m.name)+' · '+m.rank+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Код (придумай сам)</label><input id="gc-code" type="text" placeholder="Напр. JEDI-LIA или любой текст"></div>'+
+    '<div style="margin-top:10px"><button class="btn ghost small" id="gc-rand" type="button">⟳ или сгенерировать случайный</button></div>'+
+    '<button class="btn" id="gc-ok" style="margin-top:14px">Привязать код к Джедаю</button>');
+  $('#gc-rand').onclick=function(){ var a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',s='JEDI-'; for(var i=0;i<4;i++) s+=a[Math.floor(Math.random()*a.length)]; $('#gc-code').value=s; };
+  $('#gc-ok').onclick=function(){
+    var who=$('#gc-who').value, code=$('#gc-code').value.trim();
+    if(!code){ toast('Введи код или нажми «сгенерировать»'); return; }
+    var ex=config.codes&&config.codes[code];
+    if(ex){ var en=(ex===true)?'ключ основателя':(ex.name||'?'); toast('Код занят ('+en+'). Придумай другой.'); return; }
+    config.codes=config.codes||{}; config.codes[code]={name:who}; putConfig();
+    logCouncil('<b>'+esc(user.name)+'</b> привязал(а) код «'+esc(code)+'» к «'+esc(who)+'»');
+    closeModal();
+    openModal('<button class="x" data-x>×</button><h2>Код для «'+esc(who)+'»</h2><div class="codebox">'+esc(code)+'</div><p style="color:var(--ink-2);margin-top:8px">Передай лично. Код привязан именно к этому Джедаю — с чужим именем не сработает.</p>');
+  };
+};
+
+/* перерисовать Совет новой версией, если приложение уже открыто */
+if(typeof OPEN!=='undefined' && OPEN){ renderAdmin(); }
 </script>
 </body>
 </html>
