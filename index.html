@@ -1696,6 +1696,30 @@ function renderSchedule(){
 }
 
 if(typeof OPEN!=='undefined'&&OPEN){ renderSchedule(); }
+  /* ===== ФИНАЛЬНЫЙ ПАТЧ: все ошибки закрыты ===== */
+// 1. Объявляем недостающие переменные
+if(typeof TV==='undefined') var TV={level:'years',yid:null,sid:null,cid:null,lid:null};
+if(typeof libFilter==='undefined') var libFilter='all';
+
+// 2. Защищаем buildTree от undefined TV
+var _origBuildTree=buildTree;
+buildTree=function(){
+  if(!TV) TV={level:'years',yid:null,sid:null,cid:null,lid:null};
+  if(!user){ var box=$('#lessons-tree'); if(box) box.innerHTML=''; var adm=$('#tree-admin'); if(adm) adm.innerHTML=''; return; }
+  _origBuildTree();
+};
+
+// 3. Защищаем ensureSched от undefined schedule
+var _origEnsureSched=ensureSched;
+ensureSched=function(){
+  try{
+    if(!Array.isArray(schedule)) schedule=[];
+    if(!Array.isArray(config.schedCols)||!config.schedCols.length){ config.schedCols=[{id:'time',label:'Время'},{id:'plan',label:'Учебный план / Тема'},{id:'need',label:'Что нужно'},{id:'teacher',label:'Учитель'}]; putConfig(); }
+  }catch(err){ console.warn('ensureSched',err); }
+};
+
+// 4. Перезагружаем расписание после исправлений
+if(typeof OPEN!=='undefined'&&OPEN){ try{renderSchedule();}catch(_){} }
 </script>
 </body>
 </html>
