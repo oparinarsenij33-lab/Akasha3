@@ -678,6 +678,180 @@ $('#gen-code').onclick=function(){
     openModal('<button class="x" data-x>×</button><h2>Код для «'+esc(who)+'»</h2><div class="codebox">'+code+'</div><p style="color:var(--ink-2);margin-top:8px">Передай лично. Ранг привязан к записи Джедая.</p>');
   };
 };
+  /* =========================================================
+   УЧЕБНИК v2: Год → Раздел по рангу → Тема/Глава → Урок(страница)
+   + убираем мёртвый блок «Твой ранг» с Врат
+   ========================================================= */
+(function(){ var _fr=document.getElementById('fld-rank'); if(_fr) _fr.parentNode.removeChild(_fr); })();
+function updateHint(){} /* noop: ранга на Вратах больше нет */
+
+/* --- навигация по уровням --- */
+var TV={level:'years',yid:null,sid:null,cid:null,lid:null};
+function tvBack(){ if(TV.level==='sections'){TV.level='years';TV.yid=null;} else if(TV.level==='chapters'){TV.level='sections';TV.sid=null;} else if(TV.level==='lessons'){TV.level='chapters';TV.cid=null;} else if(TV.level==='lesson'){TV.level='lessons';TV.lid=null;} buildTree(); }
+
+/* --- миграция старых данных в новую структуру (один раз) --- */
+function migrateTreeOnce(){
+  var changed=false;
+  tree.forEach(function(y){
+    if(y.sections) return;
+    var old=y.chapters||[];
+    y.sections=[{id:uid('S'),rank:'Адепт',title:'Общие уроки',chapters:old.map(function(c){return {id:c.id||uid('C'),title:c.title,lessons:(c.lessons||[]).map(function(l){return {id:l.id,n:l.n,title:l.title,meta:l.meta,body:l.body};})};})}];
+    delete y.chapters; changed=true;
+  });
+  if(changed) putTree();
+}
+var _mig=false;
+setInterval(function(){ if(!_mig && typeof tree!=='undefined' && tree.length){ _mig=true; migrateTreeOnce(); } },600);
+
+/* --- перекрытия под новую структуру --- */
+function allLessons(){ var o=[]; tree.forEach(function(y){ (y.sections||[]).forEach(function(s){ (s.chapters||[]).forEach(function(c){ (c.lessons||[]).forEach(function(l){ o.push({y:y,s:s,c:c,l:l}); }); }); }); }); return o; }
+function findLesson(id){ for(var a=allLessons(),i=0;i<a.length;i++){ if(a[i].l.id===id) return a[i]; } return null; }
+function findChapter(cid){ for(var a=allLessons(),i=0;i<a.length;i++){ if(a[i].c.id===cid) return a[i]; } return null; }
+function secOpen(s){ return ri(user.rank)>=ri(s.rank); }
+function lessonStatusMap(){
+  var me=findMember(user.name),prog=(me&&me.progress)||[],map={},open=0,done=0,firstOpen=null,firstLocked=null;
+  allLessons().forEach(function(o){ var l=o.l,locked=!secOpen(o.s),s;
+    if(locked){ s='locked'; if(!firstLocked) firstLocked=l.id; }
+    else if(prog.indexOf(l.id)>=0){ s='done'; done++; if(!firstOpen) firstOpen=l.id; }
+    else { s='open'; open++; if(!firstOpen) firstOpen=l.id; }
+    map[l.id]=s; });
+  var avail=allLessons().filter(function(o){return secOpen(o.s);}).length;
+  return {map:map,openCount:open+done,done:done,avail:avail,firstOpen:firstOpen,firstLocked:firstLocked};
+}
+function seedProgress(rank){ var idx=ri(rank); return allLessons().filter(function(o){return ri(o.s.rank)<=idx;}).map(function(o){return o.l.id;}); }
+
+/* --- рендер уровней --- */
+function backBtn(){ return '<div style="margin-bottom:14px"><button class="btn ghost small" id="tree-back">← Назад</button></div>'; }
+function wireBack(){ var b=document.getElementById('tree-back'); if(b) b.onclick=tvBack; }
+function buildTree(){
+  var can=isMaster(user),box=$('#lessons-tree'),adm=$('#tree-admin');
+  if(!box) return;
+  if(TV.level==='years') rYears(box,adm,can);
+  else if(TV.level==='sections') rSections(box,adm,can);
+  else if(TV.level==='chapters') rChapters(box,adm,can);
+  else if(TV.level==='lessons') rLessons(box,adm,can);
+  else if(TV.level==='lesson') rLessonPage(box,adm,can);
+  renderHallHints();
+}
+function rYears(box,adm,can){
+  adm.innerHTML=can?'<button class="btn small" id="add-year"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить учебный год</button>':'';
+  if(can&&$('#add-year')) $('#add-year').onclick=addYear;
+  if(!tree.length){ box.innerHTML='<p class="empty-note">Учебник пуст. Мастер может добавить первый учебный год.</p>'; return; }
+  box.innerHTML=tree.map(function(y){ var lc=(y.sections||[]).reduce(function(a,s){return a+(s.chapters||[]).reduce(function(b,c){return b+(c.lessons||[]).length;},0);},0);
+    var tools=can?'<span style="float:right"><button class="iconbtn" data-edity="'+y.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dely="'+y.id+'"><svg><use href="#i-trash"/></svg></button></span>':'';
+    return '<div class="mod rv" data-ty="'+y.id+'" style="cursor:pointer">'+tools+'<span><h3>Учебный год '+esc(String(y.year))+'</h3><p>'+lc+' уроков · '+(y.sections||[]).length+' разделов</p></span><span class="chev"><svg><use href="#i-chev"/></svg></span></div>'; }).join('');
+  box.querySelectorAll('[data-ty]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('.iconbtn')) return; TV={level:'sections',yid:el.dataset.ty,sid:null,cid:null,lid:null}; buildTree(); }; });
+  box.querySelectorAll('[data-edity]').forEach(function(b){ b.onclick=function(){ renameYear(b.dataset.edity); }; });
+  box.querySelectorAll('[data-dely]').forEach(function(b){ b.onclick=function(){ delYear(b.dataset.dely); }; });
+  runReveals();
+}
+function rSections(box,adm,can){
+  var y=tree.find(function(x){return x.id===TV.yid;}); if(!y){ TV.level='years'; buildTree(); return; }
+  adm.innerHTML=can?'<button class="btn small" id="add-sec"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить раздел по рангу</button>':'';
+  if(can&&$('#add-sec')) $('#add-sec').onclick=function(){ addSection(y.id); };
+  var list=y.sections||[];
+  box.innerHTML=backBtn()+'<p class="kicker">Учебный год '+esc(String(y.year))+'</p><h2 style="font-family:Forum;font-size:24px;margin:6px 0 14px">Разделы по рангам</h2>'+(list.length?list.map(function(s){
+    var open=secOpen(s), lc=(s.chapters||[]).reduce(function(a,c){return a+(c.lessons||[]).length;},0);
+    var tools=can?'<span style="float:right"><button class="iconbtn" data-edits="'+s.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dels="'+s.id+'"><svg><use href="#i-trash"/></svg></button></span>':'';
+    var lockMsg=open?'':'<p style="color:var(--red);font-family:Jost;font-size:11px;margin-top:4px">🔒 Этот раздел доступен только рангу '+esc(s.rank)+' и выше. Достигни ранга '+esc(s.rank)+', чтобы открыть.</p>';
+    return '<div class="mod rv" data-ts="'+s.id+'" style="cursor:'+(open?'pointer':'default')+';'+(open?'':'opacity:.55')+'">'+tools+'<span><h3>'+esc(s.title||('Уроки для ранга '+s.rank))+'</h3><p>ранг: '+esc(s.rank)+' · '+lc+' уроков</p>'+lockMsg+'</span>'+(open?'<span class="chev"><svg><use href="#i-chev"/></svg></span>':'<span class="lk"><svg><use href="#i-lock"/></svg></span>')+'</div>'; }).join(''):'<p class="empty-note">В этом году пока нет разделов.</p>');
+  wireBack();
+  box.querySelectorAll('[data-ts]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('.iconbtn')) return; var s=list.find(function(x){return x.id===el.dataset.ts;}); if(!s||!secOpen(s)) return; TV.level='chapters'; TV.sid=s.id; TV.cid=null; TV.lid=null; buildTree(); }; });
+  box.querySelectorAll('[data-edits]').forEach(function(b){ b.onclick=function(){ editSection(y.id,b.dataset.edits); }; });
+  box.querySelectorAll('[data-dels]').forEach(function(b){ b.onclick=function(){ delSection(y.id,b.dataset.dels); }; });
+  runReveals();
+}
+function rChapters(box,adm,can){
+  var y=tree.find(function(x){return x.id===TV.yid;}); if(!y){ TV.level='years'; buildTree(); return; }
+  var s=(y.sections||[]).find(function(x){return x.id===TV.sid;}); if(!s){ TV.level='sections'; buildTree(); return; }
+  adm.innerHTML=can?'<button class="btn small" id="add-ch"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить тему / главу</button>':'';
+  if(can&&$('#add-ch')) $('#add-ch').onclick=function(){ addChapter(s.id); };
+  var list=s.chapters||[];
+  box.innerHTML=backBtn()+'<p class="kicker">'+esc(String(y.year))+' · '+esc(s.title)+'</p><h2 style="font-family:Forum;font-size:24px;margin:6px 0 14px">Темы и главы</h2>'+(list.length?list.map(function(c){
+    var tools=can?'<span style="float:right"><button class="iconbtn" data-editc="'+c.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delc="'+c.id+'"><svg><use href="#i-trash"/></svg></button></span>':'';
+    return '<div class="mod rv" data-tc="'+c.id+'" style="cursor:pointer">'+tools+'<span><h3>'+esc(c.title)+'</h3><p>'+(c.lessons||[]).length+' уроков</p></span><span class="chev"><svg><use href="#i-chev"/></svg></span></div>'; }).join(''):'<p class="empty-note">В этом разделе пока нет тем.</p>');
+  wireBack();
+  box.querySelectorAll('[data-tc]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('.iconbtn')) return; TV.level='lessons'; TV.cid=el.dataset.tc; TV.lid=null; buildTree(); }; });
+  box.querySelectorAll('[data-editc]').forEach(function(b){ b.onclick=function(){ editChapter(s.id,b.dataset.editc); }; });
+  box.querySelectorAll('[data-delc]').forEach(function(b){ b.onclick=function(){ delChapter(b.dataset.delc); }; });
+  runReveals();
+}
+function rLessons(box,adm,can){
+  var f=findChapter(TV.cid); if(!f){ TV.level='chapters'; buildTree(); return; }
+  adm.innerHTML=can?'<button class="btn small" id="add-ls"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить урок</button>':'';
+  if(can&&$('#add-ls')) $('#add-ls').onclick=function(){ editLesson(null,f.c.id); };
+  var st=lessonStatusMap(),list=f.c.lessons||[];
+  box.innerHTML=backBtn()+'<p class="kicker">'+esc(String(f.y.year))+' · '+esc(f.s.title)+' · '+esc(f.c.title)+'</p><h2 style="font-family:Forum;font-size:24px;margin:6px 0 14px">Уроки</h2>'+(list.length?list.map(function(l){
+    var s=st.map[l.id],txt=s==='done'?'✓ сдано':'открыт';
+    var tools=can?'<button class="iconbtn" data-editl="'+l.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dell="'+l.id+'"><svg><use href="#i-trash"/></svg></button>':'';
+    return '<div class="lesson rv" data-tl="'+l.id+'" style="cursor:pointer"><div class="num">'+lessonLabel(l)+'</div><div class="l-info"><h4>'+esc(l.title)+'</h4><p>'+esc(l.meta||'')+'</p><span class="st '+s+'">'+txt+'</span></div><div class="l-act">'+tools+'<span class="chev"><svg><use href="#i-chev"/></svg></span></div></div>'; }).join(''):'<p class="empty-note">В этой теме пока нет уроков.</p>');
+  wireBack();
+  box.querySelectorAll('[data-tl]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('.iconbtn')) return; TV.level='lesson'; TV.lid=el.dataset.tl; buildTree(); }; });
+  box.querySelectorAll('[data-editl]').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); editLesson(b.dataset.editl,null); }; });
+  box.querySelectorAll('[data-dell]').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); delLesson(b.dataset.dell); }; });
+  runReveals();
+}
+function rLessonPage(box,adm,can){
+  adm.innerHTML='';
+  var f=findLesson(TV.lid); if(!f){ TV.level='lessons'; buildTree(); return; }
+  var l=f.l;
+  box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+' · '+esc(String(f.y.year))+' / '+esc(f.s.title)+' / '+esc(f.c.title)+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1>'+(can?'<div style="margin-bottom:14px"><button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button></div>':'')+'<div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
+  wireBack();
+  if(can&&$('#ol-edit')) $('#ol-edit').onclick=function(){ editLesson(l.id,null); };
+}
+
+/* --- CRUD: годы / разделы / главы / уроки --- */
+function refreshAfterTree(){ putTree(); buildTree(); renderFeatured(); renderProgress(); }
+function addYear(){ openModal('<button class="x" data-x>×</button><h2>Новый учебный год</h2><div class="field"><label>Год</label><input id="ny-year" type="number" value="'+new Date().getFullYear()+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ny-ok">Создать</button></div>');
+  $('#ny-ok').onclick=function(){ var y=parseInt($('#ny-year').value,10)||new Date().getFullYear(); tree.push({id:uid('Y'),year:y,sections:[]}); logCouncil('<b>'+esc(user.name)+'</b> добавил(а) учебный год '+y); closeModal(); TV={level:'sections',yid:tree[tree.length-1].id,sid:null,cid:null,lid:null}; refreshAfterTree(); }; }
+function renameYear(id){ var o=tree.find(function(y){return y.id===id;}); openModal('<button class="x" data-x>×</button><h2>Переименовать год</h2><div class="field"><label>Год</label><input id="ry-year" type="number" value="'+(o?o.year:new Date().getFullYear())+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ry-ok">Сохранить</button></div>');
+  $('#ry-ok').onclick=function(){ var y=parseInt($('#ry-year').value,10); if(!y) return; if(o) o.year=y; closeModal(); refreshAfterTree(); }; }
+function delYear(id){ var y=tree.find(function(x){return x.id===id;}); confirmModal('Удалить учебный год '+y.year+' со всеми разделами и уроками?',function(){ tree=tree.filter(function(x){return x.id!==id;}); logCouncil('<b>'+esc(user.name)+'</b> удалил(а) учебный год '+y.year); TV={level:'years',yid:null,sid:null,cid:null,lid:null}; refreshAfterTree(); }); }
+function addSection(yid){ openModal('<button class="x" data-x>×</button><h2>Новый раздел по рангу</h2><div class="field sel"><label>Минимальный ранг раздела</label><select id="as-rank">'+RANKS.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('')+'</select></div><div class="field"><label>Название (необяз.)</label><input id="as-title" type="text" placeholder="Напр.: Уроки для Падаванов"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="as-ok">Создать раздел</button></div>');
+  $('#as-ok').onclick=function(){ var rk=$('#as-rank').value,t=$('#as-title').value.trim()||('Уроки для ранга '+rk); var y=tree.find(function(x){return x.id===yid;}); y.sections=y.sections||[]; var s={id:uid('S'),rank:rk,title:t,chapters:[]}; y.sections.push(s); logCouncil('<b>'+esc(user.name)+'</b> создал(а) раздел «'+esc(t)+'»'); closeModal(); TV.level='chapters'; TV.sid=s.id; refreshAfterTree(); }; }
+function editSection(yid,sid){ var y=tree.find(function(x){return x.id===yid;}); var s=(y.sections||[]).find(function(x){return x.id===sid;}); openModal('<button class="x" data-x>×</button><h2>Править раздел</h2><div class="field sel"><label>Минимальный ранг</label><select id="es-rank">'+RANKS.map(function(r){return '<option value="'+r+'" '+(r===s.rank?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div><div class="field"><label>Название</label><input id="es-title" type="text" value="'+esc(s.title||'')+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="es-ok">Сохранить</button></div>');
+  $('#es-ok').onclick=function(){ s.rank=$('#es-rank').value; s.title=$('#es-title').value.trim()||('Уроки для ранга '+s.rank); closeModal(); refreshAfterTree(); }; }
+function delSection(yid,sid){ var y=tree.find(function(x){return x.id===yid;}); var s=(y.sections||[]).find(function(x){return x.id===sid;}); confirmModal('Удалить раздел «'+s.title+'» со всеми темами и уроками?',function(){ y.sections=y.sections.filter(function(x){return x.id!==sid;}); logCouncil('<b>'+esc(user.name)+'</b> удалил(а) раздел «'+esc(s.title)+'»'); TV.level='sections'; TV.sid=null; refreshAfterTree(); }); }
+function addChapter(sid){ openModal('<button class="x" data-x>×</button><h2>Новая тема / глава</h2><div class="field"><label>Название</label><input id="ac-title" type="text" placeholder="Напр.: Глава I · Основы"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ac-ok">Создать</button></div>');
+  $('#ac-ok').onclick=function(){ var t=$('#ac-title').value.trim(); if(!t) return; var f=findChapterBySec(sid); f.s.chapters=f.s.chapters||[]; var c={id:uid('C'),title:t,lessons:[]}; f.s.chapters.push(c); logCouncil('<b>'+esc(user.name)+'</b> создал(а) главу «'+esc(t)+'»'); closeModal(); TV.level='lessons'; TV.cid=c.id; refreshAfterTree(); }; }
+function findChapterBySec(sid){ for(var a=allLessons(),i=0;i<a.length;i++){ if(a[i].s.id===sid) return a[i]; } var y=tree.find(function(x){return (x.sections||[]).some(function(s){return s.id===sid;});}); var s=y.sections.find(function(x){return x.id===sid;}); return {y:y,s:s,c:null}; }
+function editChapter(sid,cid){ var f=findChapter(cid); openModal('<button class="x" data-x>×</button><h2>Переименовать тему</h2><div class="field"><label>Название</label><input id="ec-title" type="text" value="'+esc(f.c.title)+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ec-ok">Сохранить</button></div>');
+  $('#ec-ok').onclick=function(){ var t=$('#ec-title').value.trim(); if(!t) return; f.c.title=t; closeModal(); refreshAfterTree(); }; }
+function delChapter(cid){ var f=findChapter(cid); confirmModal('Удалить тему «'+f.c.title+'» со всеми уроками?',function(){ f.s.chapters=f.s.chapters.filter(function(c){return c.id!==cid;}); logCouncil('<b>'+esc(user.name)+'</b> удалил(а) главу «'+esc(f.c.title)+'»'); TV.level='chapters'; TV.cid=null; refreshAfterTree(); }); }
+function editLesson(id,cid){
+  var create=!id, f=create?findChapter(cid):findLesson(id), l=create?{n:'',title:'',meta:'',body:''}:f.l;
+  openModal('<button class="x" data-x>×</button><h2>'+(create?'Новый урок':'Править урок')+'</h2><div class="field"><label>Обозначение (необяз.)</label><input id="el-n" type="text" value="'+esc(l.n||'')+'"></div><div class="field"><label>Название</label><input id="el-title" type="text" value="'+esc(l.title||'')+'"></div><div class="field"><label>Мета (формат / длительность)</label><input id="el-meta" type="text" value="'+esc(l.meta||'')+'"></div><div class="field"><label>Текст урока</label><div id="el-writer-mount" style="margin-top:8px"></div></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">'+(create?'Создать':'Сохранить')+'</button></div>');
+  var w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{}); if(!create) setWriterHTML(w,l.body||'');
+  $('#el-ok').onclick=function(){ var title=$('#el-title').value.trim(); if(!title) return; var data={n:$('#el-n').value.trim(),title:title,meta:$('#el-meta').value.trim(),body:getWriterHTML(w)};
+    if(create){ data.id=uid('L'); f.c.lessons=f.c.lessons||[]; f.c.lessons.push(data); logCouncil('<b>'+esc(user.name)+'</b> добавил(а) урок «'+esc(title)+'»'); }
+    else { l.n=data.n; l.title=data.title; l.meta=data.meta; l.body=data.body; logCouncil('<b>'+esc(user.name)+'</b> отредактировал(а) урок «'+esc(title)+'»'); }
+    closeModal(); TV.level='lessons'; if(create) TV.cid=cid; refreshAfterTree(); };
+}
+function openLesson(id){ TV.level='lesson'; TV.lid=id; buildTree(); }
+
+/* --- featured / прогресс / таблица под новую структуру --- */
+function renderFeatured(){
+  var st=lessonStatusMap(),f=$('#featured'),pct=st.avail?Math.round(st.done/st.avail*100):0;
+  if(st.firstOpen){ var o=findLesson(st.firstOpen),l=o.l; f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твоё обучение</p><h3>Урок '+lessonLabel(l)+' — '+esc(l.title)+'</h3><div class="progress"><i data-w="'+pct+'"></i></div><div class="f-row"><span>Пройдено '+st.done+' из '+st.avail+' ('+pct+'%)</span><button class="btn small" id="feat-go">Открыть</button></div>'; setTimeout(function(){ var b=f.querySelector('.progress i'); if(b) b.style.width=pct+'%'; },120); f.querySelector('#feat-go').onclick=function(){ TV={level:'lesson',yid:o.y.id,sid:o.s.id,cid:o.c.id,lid:l.id}; goto('lessons'); }; }
+  else if(st.firstLocked){ var o2=findLesson(st.firstLocked),l2=o2.l; f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твой следующий шаг</p><h3>Урок '+lessonLabel(l2)+' — '+esc(l2.title)+'</h3><div class="f-lock"><svg><use href="#i-lock"/></svg><span>Откроется в разделе ранга '+esc(o2.s.rank)+'</span></div>'; }
+  else { f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Путь пройден</p><h3>Все доступные уроки сданы.</h3>'; }
+  applyHerald(config.heraldData||null);
+}
+function renderProgress(){
+  var box=$('#progress-list'); if(!box) return;
+  var sorted=roster.slice().filter(function(m){return m.status!=='Исключён';}).sort(function(a,b){return ri(b.rank)-ri(a.rank);});
+  box.innerHTML=sorted.map(function(m){ var idx=ri(m.rank); var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx;}); var passed=avail.filter(function(o){return (m.progress||[]).indexOf(o.l.id)>=0;}).length; var pct=avail.length?Math.round(passed/avail.length*100):0; var o=onlineInfo(m.name); var canEdit=isMaster(user);
+    var marks=allLessons().map(function(x){ var lock=ri(x.s.rank)>idx, pass=(m.progress||[]).indexOf(x.l.id)>=0; return '<span class="lmark '+(lock?'lock':(pass?'pass':''))+'">'+lessonLabel(x.l)+' '+(lock?'🔒':(pass?'✓':'·'))+'</span>'; }).join('');
+    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div class="lessons">'+marks+'</div></div>'; }).join('')||'<p class="empty-note">Нет учеников.</p>';
+  box.querySelectorAll('[data-editp]').forEach(function(b){ b.onclick=function(){ editProgress(b.dataset.editp); }; }); runReveals();
+}
+function editProgress(name){
+  var m=findMember(name); if(!m) return;
+  var checks=allLessons().map(function(o){ var lock=ri(o.s.rank)>ri(m.rank); return '<label><input type="checkbox" data-lid="'+o.l.id+'" '+((m.progress||[]).indexOf(o.l.id)>=0?'checked':'')+' '+(lock?'disabled':'')+'> '+esc(String(o.y.year))+' · '+esc(o.s.title)+' · '+esc(o.c.title)+' · '+lessonLabel(o.l)+' — '+esc(o.l.title)+'</label>'; }).join('');
+  openModal('<button class="x" data-x>×</button><h2>'+esc(name)+'</h2><div class="field sel"><label>Ранг</label><select id="ep-rank">'+RANKS.map(function(r){return '<option value="'+r+'" '+(r===m.rank?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div><div class="field sel"><label>Статус в Ордене</label><select id="ep-status">'+ROLE_STATUS.map(function(s){return '<option '+(s===m.status?'selected':'')+'>'+s+'</option>';}).join('')+'</select></div><div class="field"><label>Звание</label><input id="ep-title" type="text" value="'+esc(m.title||'')+'"></div><div class="field sel"><label>Учитель</label><select id="ep-teacher"><option value="">— нет —</option>'+mastersList().filter(function(x){return x.name!==name;}).map(function(x){return '<option '+(x.name===m.teacher?'selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></div><label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" '+(m.inCouncil?'checked':'')+'><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label><div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">'+checks+'</div></div><button class="btn" id="ep-save">Сохранить решение</button>');
+  $('#ep-save').onclick=function(){ m.rank=$('#ep-rank').value; m.status=$('#ep-status').value; m.title=$('#ep-title').value.trim(); m.teacher=$('#ep-teacher').value; m.inCouncil=$('#ep-council').checked; m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid;}); putMember(m); logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»'); closeModal(); if(name===user.name){ user.rank=m.rank; openApp(); } else { renderProgress(); renderOrder(); renderAdmin(); buildChannels(); buildTree(); } };
+}
+buildTree();
 </script>
 </body>
 </html>
