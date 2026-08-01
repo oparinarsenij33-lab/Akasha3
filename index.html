@@ -714,7 +714,7 @@ $('#add-member-btn').onclick=()=>{
     <div class="field sel"><label>Статус</label><select id="nm-status">${ROLE_STATUS.map(s=>`<option>${s}</option>`).join('')}</select></div>
     <div class="field"><label>Звание</label><input id="nm-title" type="text"></div>
     <button class="btn" id="nm-save">Принять в Орден</button>`);
-  $('#nm-save').onclick=()=>{const n=$('#nm-name').value.trim();if(!n)return;if(findMember(n))return;const rank=$('#nm-rank').value;const m={name:n,rank,status:$('#nm-status').value,title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000};putMember(m);logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'»');closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();};
+  $('#nm-save').onclick=()=>{const n=$('#nm-name').value.trim();if(!n)return;if(findMember(n))return;const rank=$('#nm-rank').value;const m={name:n,rank:rank,status:($('#nm-status').value||'').trim()||'Ученик',title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:0};;putMember(m);logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'»');closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();};
 };
 $('#gen-code').onclick=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='JEDI-';for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)];config.codes=config.codes||{};config.codes[s]=true;putConfig();openModal(`<button class="x" data-x>×</button><h2>Код-приглашение</h2><div class="codebox">${s}</div>`)};
 function renderProfile(){
