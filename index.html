@@ -1276,6 +1276,150 @@ function renderSchedule(){
 }
 // Инициализация при входе
 if(typeof OPEN!=='undefined'&&OPEN){ renderSchedule(); }
+  /* ===== РАСПИСАНИЕ v6: календарь + кнопка «Сохранить таблицу» + красивый просмотр ===== */
+function renderSchedule(){
+  var can=isMaster(user);
+  // --- Календарь ---
+  var now=new Date(), y=now.getFullYear(), m=now.getMonth();
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var firstDay=new Date(y,m,1).getDay(); if(firstDay===0) firstDay=7;
+  var cal='<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><button class="btn ghost small" id="cal-prev">‹</button><span style="font-family:Jost;font-size:14px;color:var(--ink-2)">'+['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][m]+' '+y+'</span><button class="btn ghost small" id="cal-next">›</button></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  for(var i=1;i<firstDay;i++) cal+='<div></div>';
+  for(var d=1;d<=daysInMonth;d++){
+    var dt=new Date(y,m,d);
+    var isToday=dt.toDateString()===now.toDateString();
+    cal+='<div class="cal-day" data-date="'+_iso(dt)+'" style="padding:6px;text-align:center;border-radius:4px;cursor:pointer;background:'+(isToday?'var(--gold-2)':'transparent')+';color:'+(isToday?'#fff':'var(--ink)')+';font-weight:500">'+d+'</div>';
+  }
+  cal+='</div></div>';
+  
+  // --- Таблица ---
+  var tbl='<div style="margin-top:8px"><button class="btn small" id="sch-add-row">+ Добавить строку</button>';
+  if(can) tbl+='<button class="btn ghost small" id="sch-add-col">+ Добавить столбец</button>';
+  tbl+='</div><div style="overflow-x:auto;max-width:100%"><table id="sched-table" class="sched-table" style="width:100%;border-collapse:collapse;min-width:600px;border:1px solid var(--line);background:var(--card)"><thead><tr>';
+  if(!schedule.cols || !Array.isArray(schedule.cols)) schedule.cols=['Дата','Время','Учебный план / Тема','Что нужно','Учитель'];
+  schedule.cols.forEach(function(col,i){
+    tbl+='<th style="padding:10px 12px;border:1px solid var(--line-soft);background:linear-gradient(180deg,#FFFBF0,#F7EED4);font-family:Jost;font-size:12px;text-align:left;white-space:nowrap">';
+    if(can) tbl+='<span contenteditable="true" class="sch-col-name">'+esc(col)+'</span> <button class="iconbtn dng" data-delcol="'+i+'" title="Удалить столбец"><svg><use href="#i-trash"/></svg></button>';
+    else tbl+=esc(col);
+    tbl+='</th>';
+  });
+  if(can) tbl+='<th style="width:44px"></th>';
+  tbl+='</tr></thead><tbody>';
+  if(!schedule.rows || !Array.isArray(schedule.rows)) schedule.rows=[];
+  schedule.rows.forEach(function(row,i){
+    tbl+='<tr>';
+    row.forEach(function(cell,j){
+      var cls='sch-cell';
+      if(j===0 && can) cls+=' sch-date-cell'; // первая колонка — дата
+      tbl+='<td style="padding:8px;min-height:32px;border:1px solid var(--line-soft);vertical-align:top"><span contenteditable="true" class="'+cls+'">'+esc(cell||'')+'</span></td>';
+    });
+    if(can) tbl+='<td style="padding:6px;border:1px solid var(--line-soft);text-align:center"><button class="iconbtn dng" data-delrow="'+i+'" title="Удалить строку"><svg><use href="#i-trash"/></svg></button></td>';
+    tbl+='</tr>';
+  });
+  tbl+='</tbody></table></div>';
+  
+  // --- Кнопка Сохранить ---
+  var saveBtn='';
+  if(can && schedule.editMode!==true){
+    saveBtn='<div style="margin-top:16px"><button class="btn" id="sch-save-table">Сохранить таблицу</button></div>';
+  }
+  $('#sched-list').innerHTML=cal+tbl+saveBtn;
+
+  // --- Календарь: навигация ---
+  $('#cal-prev').onclick=function(){ m--; if(m<0){m=11; y--;} renderSchedule(); };
+  $('#cal-next').onclick=function(){ m++; if(m>11){m=0; y++;} renderSchedule(); };
+  $$('#sched-table .cal-day').forEach(function(el){ el.onclick=function(){ 
+    var dt=this.dataset.date;
+    // Находим первую ячейку даты в таблице (если есть) и ставим туда дату
+    var cells=$$('#sched-table .sch-date-cell');
+    if(cells.length>0){
+      cells[0].textContent=dt;
+      schedule.rows[0][0]=dt; putSchedule();
+    } else {
+      // Если нет строк — добавляем одну с датой
+      schedule.rows=schedule.rows||[]; schedule.rows.push([dt,'','','','']);
+      putSchedule(); renderSchedule();
+    }
+  };});
+
+  // --- Кнопки ---
+  var ar=$('#sch-add-row'); if(ar) ar.onclick=function(){
+    schedule.rows=schedule.rows||[]; schedule.rows.push(['','','','','']); putSchedule(); renderSchedule();
+  };
+  var ac=$('#sch-add-col'); if(ac) ac.onclick=function(){
+    schedule.cols=schedule.cols||[]; schedule.cols.push('Новый столбец'); putSchedule(); renderSchedule();
+  };
+  $('#sched-table').querySelectorAll('[data-delcol]').forEach(function(btn){
+    btn.onclick=function(){
+      var idx=+this.dataset.delcol;
+      schedule.cols.splice(idx,1);
+      schedule.rows.forEach(function(r){ r.splice(idx,1); });
+      putSchedule(); renderSchedule();
+    };
+  });
+  $('#sched-table').querySelectorAll('[data-delrow]').forEach(function(btn){
+    btn.onclick=function(){
+      var idx=+this.dataset.delrow;
+      schedule.rows.splice(idx,1);
+      putSchedule(); renderSchedule();
+    };
+  });
+
+  // --- Сохранить таблицу (переход в режим просмотра)
+  var sv=$('#sch-save-table');
+  if(sv) sv.onclick=function(){
+    schedule.editMode=true;
+    putSchedule();
+    renderSchedule(); // перерисует в режиме просмотра
+  };
+
+  // --- Режим просмотра (если editMode === true)
+  if(schedule.editMode===true){
+    $('#sched-table').classList.add('sched-view');
+    $('#sched-table').querySelectorAll('.sch-cell').forEach(function(el){
+      el.contentEditable='false';
+      el.style.background='transparent';
+      el.style.padding='10px 12px';
+      el.style.border='none';
+    });
+    $('#sched-table').querySelectorAll('.sch-date-cell').forEach(function(el){
+      el.style.fontWeight='500';
+      el.style.color='var(--ink-2)';
+    });
+    $('#sched-table').querySelectorAll('.iconbtn').forEach(function(btn){ btn.style.display='none'; });
+    $('#sch-add-row, #sch-add-col').forEach(function(btn){ btn.style.display='none'; });
+    $('#sch-save-table').style.display='none';
+  }
+
+  // --- Автосохранение при потере фокуса
+  $('#sched-table').addEventListener('blur',function(e){
+    if(e.target.classList.contains('sch-cell')){
+      var tr=e.target.closest('tr'), td=e.target.closest('td');
+      var rowIdx=[...tr.parentNode.children].indexOf(tr);
+      var colIdx=[...td.parentNode.children].indexOf(td);
+      if(rowIdx>=0 && colIdx>=0 && schedule.rows && schedule.rows[rowIdx]){
+        schedule.rows[rowIdx][colIdx]=e.target.textContent.trim();
+        putSchedule();
+      }
+    }
+    if(e.target.classList.contains('sch-col-name')){
+      var colIdx=[...e.target.parentNode.parentNode.children].indexOf(e.target.parentNode);
+      if(colIdx>=0 && schedule.cols){
+        schedule.cols[colIdx]=e.target.textContent.trim();
+        putSchedule();
+      }
+    }
+  },true);
+
+  runReveals();
+}
+
+// Вспомогательные функции
+function _iso(d){
+  if(!(d instanceof Date)) d=new Date();
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+if(typeof OPEN!=='undefined'&&OPEN){ renderSchedule(); }
 </script>
 </body>
 </html>
