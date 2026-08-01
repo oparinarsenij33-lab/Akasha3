@@ -1066,6 +1066,64 @@ function renderHallEvents(){ ensureSched(); var today=_iso(new Date()); var evs=
   $('#hall-events').innerHTML=evs.length?evs.map(function(e){var c=e.cols||{};return '<div class="ev rv"><span class="t">'+esc(c.time||'—')+'</span><span class="node"></span><span><h4>'+esc(c.plan||'Занятие')+'</h4><p>'+esc(c.teacher?('Учитель: '+c.teacher):(c.need||''))+'</p></span></div>';}).join(''):''; runReveals();
 }
 if(typeof OPEN!=='undefined' && OPEN){ renderSchedule(); renderHallEvents(); }
+  /* ===== РАСПИСАНИЕ v3: защитный рендер + ловушка ошибки на экране ===== */
+function ensureSched(){
+  try{
+    if(!Array.isArray(schedule)) schedule=[];
+    if(!Array.isArray(config.schedCols)||!config.schedCols.length){ config.schedCols=DEFAULT_SCHED_COLS.slice(); putConfig(); }
+    var ch=false;
+    schedule=schedule.map(function(e){
+      if(e&&e.cols&&e.date) return e;
+      ch=true;
+      var d=(e&&e.day==='today')?_iso(new Date()):((e&&e.day==='soon')?_addD(_iso(new Date()),1):_iso(new Date()));
+      return {id:(e&&e.id)||uid('E'),date:d,cols:{time:(e&&e.t)||'',plan:(e&&e.title)||'',need:(e&&e.where)||'',teacher:''}};
+    });
+    if(ch) putSchedule();
+  }catch(err){ console.warn('ensureSched',err); }
+}
+function renderSchedule(){
+  try{
+    ensureSched();
+    var can=isMaster(user);
+    var cols=(Array.isArray(config.schedCols)&&config.schedCols.length)?config.schedCols:DEFAULT_SCHED_COLS;
+    var today=_iso(new Date());
+    var mon=_mon(schedDate), days=[], i;
+    for(i=0;i<7;i++) days.push(_addD(mon,i));
+    var w='<div style="display:flex;align-items:center;gap:8px;margin:6px 0 14px;flex-wrap:wrap"><button class="btn ghost small" id="sch-prevw">‹ неделя</button><button class="btn ghost small" id="sch-today">сегодня</button><button class="btn ghost small" id="sch-nextw">неделя ›</button><span style="margin-left:auto;font-family:Jost;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">'+esc(schedDate)+'</span></div><div class="week" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
+    days.forEach(function(ds){ var dd=_parse(ds); var on=ds===schedDate; w+='<div class="day'+(on?' today':'')+'" data-sd="'+ds+'" style="cursor:pointer"><span>'+_WD[(dd.getDay()+6)%7]+'</span><b>'+dd.getDate()+'</b></div>'; });
+    w+='</div>';
+    var wk=$('#week'); if(wk){ wk.classList.add('on'); wk.innerHTML=w; }
+    var tb=''; if(can){ tb='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px"><button class="btn small" id="sch-addrow"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить занятие</button><button class="btn ghost small" id="sch-cols">⚙ Столбцы таблицы</button></div>'; }
+    var adm=$('#admin-sched'); if(adm){ adm.style.display='block'; adm.innerHTML=tb; }
+    var rows=schedule.filter(function(e){return e&&e.date===schedDate;});
+    var t='<div style="overflow-x:auto;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow)"><table style="width:100%;border-collapse:collapse;min-width:560px"><thead><tr>';
+    cols.forEach(function(c){ t+='<th style="text-align:left;padding:11px 12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-3);border-bottom:2px solid var(--line);white-space:nowrap;background:linear-gradient(180deg,#FFFBF0,#F7EED4)">'+esc(c.label)+'</th>'; });
+    if(can) t+='<th style="width:84px;border-bottom:2px solid var(--line);background:linear-gradient(180deg,#FFFBF0,#F7EED4)"></th>';
+    t+='</tr></thead><tbody>';
+    if(!rows.length){ t+='<tr><td colspan="'+(cols.length+(can?1:0))+'" style="padding:22px 12px;color:var(--ink-2);font-family:Jost;font-size:12px;letter-spacing:.06em;text-align:center">На этот день занятий нет.'+(can?' Нажми «Добавить занятие».':'')+'</td></tr>'; }
+    rows.forEach(function(e,idx){ t+='<tr class="sch-row" data-eid="'+e.id+'" style="cursor:'+(can?'pointer':'default')+';background:'+(idx%2?'rgba(184,145,47,.04)':'transparent')+'">'; cols.forEach(function(c){ t+='<td style="padding:11px 12px;border-bottom:1px solid var(--line-soft);font-size:14px;vertical-align:top">'+esc((e.cols&&e.cols[c.id])?e.cols[c.id]:'—')+'</td>'; }); if(can) t+='<td style="padding:8px;border-bottom:1px solid var(--line-soft);white-space:nowrap"><button class="iconbtn" data-editrow="'+e.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delrow="'+e.id+'"><svg><use href="#i-trash"/></svg></button></td>'; t+='</tr>'; });
+    t+='</tbody></table></div>';
+    var sl=$('#sched-list'); if(sl) sl.innerHTML=t;
+    if(wk) wk.querySelectorAll('[data-sd]').forEach(function(el){ el.onclick=function(){ schedDate=el.dataset.sd; renderSchedule(); }; });
+    var pw=$('#sch-prevw'); if(pw) pw.onclick=function(){ schedDate=_addD(_mon(schedDate),-7); renderSchedule(); };
+    var nw=$('#sch-nextw'); if(nw) nw.onclick=function(){ schedDate=_addD(_mon(schedDate),7); renderSchedule(); };
+    var td=$('#sch-today'); if(td) td.onclick=function(){ schedDate=_iso(new Date()); renderSchedule(); };
+    var ar=$('#sch-addrow'); if(ar) ar.onclick=addSchedRow;
+    var cs=$('#sch-cols'); if(cs) cs.onclick=editSchedCols;
+    if(sl){
+      sl.querySelectorAll('[data-editrow]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); editSchedRow(b.dataset.editrow); }; });
+      sl.querySelectorAll('[data-delrow]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); delSchedRow(b.dataset.delrow); }; });
+      sl.querySelectorAll('.sch-row').forEach(function(tr){ tr.onclick=function(){ if(can) editSchedRow(tr.dataset.eid); }; });
+    }
+    runReveals();
+  }catch(err){
+    var msg=String((err&&err.message)||err);
+    var st=String((err&&err.stack)||'');
+    var sl2=$('#sched-list'); if(sl2) sl2.innerHTML='<pre style="color:#a8472b;white-space:pre-wrap;padding:14px;font-family:Jost;font-size:12px;line-height:1.5;border:1px dashed #a8472b;margin-top:10px">Расписание поймало ошибку:\n'+esc(msg)+'\n\n'+esc(st)+'</pre>';
+    console.error('renderSchedule',err);
+  }
+}
+if(typeof OPEN!=='undefined'&&OPEN){ try{renderSchedule();}catch(_){} }
 </script>
 </body>
 </html>
