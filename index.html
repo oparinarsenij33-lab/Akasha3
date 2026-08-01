@@ -187,7 +187,7 @@ main{max-width:820px;margin:0 auto;padding:24px 18px 130px}
       <label class="remember"><input type="checkbox" id="f-remember" checked><span class="box"><svg><use href="#i-check"/></svg></span>Запомнить меня в Архиве</label>
       <button class="btn" id="enter">Отворить Врата</button>
       <p class="gate-msg" id="gate-msg"></p>
-      <p class="proto-note">Акаша · облако Firebase · данные общие для всего Ордена · стартовый код: JEDI-2026</p>
+      <p class="proto-note">Акаша · хранилище знаний Ордена · вход по персональному коду от Мастера</p>
     </div>
   </div>
 </section>
@@ -610,6 +610,74 @@ $('#fs-minus').onclick=()=>bumpZoom(-0.1);
 $('#fs-plus').onclick=()=>bumpZoom(0.1);
 (function autoEnter(){const saved=LS('archive_user',null);if(saved&&saved.name){user={name:saved.name,rank:saved.rank||'Падаван'};$('#gate').classList.remove('active');openApp();window.scrollTo(0,0);setTimeout(()=>window.scrollTo(0,0),60)}})();
 setInterval(()=>{if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);   
+  /* Герб Ордена на Вратах — грузим из облака сразу, ещё до входа */
+if(FS){M('config').get().then(function(d){if(d.exists){var c=d.data()||{};if(c.heraldData)applyHerald(c.heraldData);}}).catch(function(){});}
+  /* ===== ЗАЩИТА ОТ МОШЕННИЧЕСТВА С РАНГАМИ ===== */
+/* Ранг больше не выбирается на Вратах — его назначает Мастер и привязывает к коду. */
+
+/* 1) Убираем список рангов с Врат */
+(function(){
+  var fr=document.getElementById('fld-rank');
+  if(fr){fr.innerHTML='<label>Твой ранг</label><p class="rank-hint" style="margin-top:8px;color:var(--ink-2)">Ранг назначает Мастер при приёме в Орден — он привязан к твоему коду-приглашению, изменить его на Вратах нельзя.</p>';}
+})();
+
+/* 2) Новый вход: имя + персональный код, ранг берётся из реестра (от Мастера) */
+async function enter(){
+  var n=$('#f-name').value.trim(),c=$('#f-code').value.trim(),msg=$('#gate-msg');msg.textContent='';
+  if(!n){$('#fld-name').classList.add('err');setTimeout(function(){$('#fld-name').classList.remove('err');},450);msg.textContent='Назови себя, путник.';return;}
+  if(!c){$('#fld-code').classList.add('err');setTimeout(function(){$('#fld-code').classList.remove('err');},450);msg.textContent='Предъяви код-приглашение.';return;}
+  try{var cd=await M('config').get();if(cd.exists)config=Object.assign({codes:{},heraldUrl:'',heraldData:''},cd.data());}catch(_){}
+  var rec=config.codes?config.codes[c]:null;
+  if(!rec){msg.textContent='Неверный код-приглашение. Обратись к Мастеру.';return;}
+  if(rec!==true && String(rec.name||'').toLowerCase()!==n.toLowerCase()){msg.textContent='Этот код выдан другому Джедаю. Введи имя, которое назвал Мастер.';return;}
+  var m=null;
+  try{var md=await db.collection('members').doc(mid(n)).get();if(md.exists)m=md.data();}catch(_){}
+  if(rec===true){ if(!m){m={name:n,rank:'Магистр',status:'Ученик',title:'',inCouncil:true,teacher:'',progress:seedProgress('Магистр'),bio:'',avatarUrl:null,lastSeen:Date.now()};} }
+  else { if(!m){msg.textContent='Ты ещё не внесён в реестр Ордена. Обратись к Мастеру.';return;} }
+  m.lastSeen=Date.now();putMember(m);
+  logCouncil('В Орден вошёл(а) <b>'+esc(m.name)+'</b> · '+m.rank);
+  user={name:m.name,rank:m.rank};
+  if($('#f-remember').checked)localStorage.setItem('archive_user',JSON.stringify(user));else localStorage.removeItem('archive_user');
+  if(document.activeElement)document.activeElement.blur();
+  var g=$('#gate');g.classList.remove('active');g.style.display='none';
+  window.scrollTo(0,0);openApp();window.scrollTo(0,0);setTimeout(function(){window.scrollTo(0,0);},60);
+}
+$('#enter').onclick=enter;
+
+/* 3) Принять в Орден: создаём члена + персональный код */
+$('#add-member-btn').onclick=function(){
+  openModal('<button class="x" data-x>×</button><h2>Новый член</h2>'+
+    '<div class="field"><label>Имя</label><input id="nm-name" type="text"></div>'+
+    '<div class="field sel"><label>Ранг</label><select id="nm-rank">'+RANKS.map(function(r,i){return '<option value="'+r+'"'+(i===0?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+    '<div class="field sel"><label>Статус</label><select id="nm-status">'+ROLE_STATUS.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Звание</label><input id="nm-title" type="text"></div>'+
+    '<button class="btn" id="nm-save">Принять и создать код</button>');
+  $('#nm-save').onclick=function(){
+    var n=$('#nm-name').value.trim();if(!n)return;if(findMember(n)){toast('Уже в реестре');return;}
+    var rank=$('#nm-rank').value;
+    var m={name:n,rank:rank,status:$('#nm-status').value,title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000};
+    putMember(m);
+    var a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',code='JEDI-';for(var i=0;i<4;i++)code+=a[Math.floor(Math.random()*a.length)];
+    config.codes=config.codes||{};config.codes[code]={name:n};putConfig();
+    logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'» · '+rank);
+    closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();
+    openModal('<button class="x" data-x>×</button><h2>Код для «'+esc(n)+'»</h2><p style="color:var(--ink-2);margin:8px 0">Передай этот код лично. Ранг «'+rank+'» уже привязан к записи — Джедай не сможет выбрать другой на Вратах.</p><div class="codebox">'+code+'</div>');
+  };
+};
+
+/* 4) Выдать код существующему члену */
+$('#gen-code').onclick=function(){
+  if(!roster.length){toast('Реестр пуст');return;}
+  openModal('<button class="x" data-x>×</button><h2>Выдать код</h2><div class="field sel"><label>Кому</label><select id="gc-who">'+roster.map(function(m){return '<option value="'+esc(m.name)+'">'+esc(m.name)+' · '+m.rank+'</option>';}).join('')+'</select></div><button class="btn" id="gc-ok">Создать код</button>');
+  $('#gc-ok').onclick=function(){
+    var who=$('#gc-who').value;
+    var a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',code='JEDI-';for(var i=0;i<4;i++)code+=a[Math.floor(Math.random()*a.length)];
+    config.codes=config.codes||{};config.codes[code]={name:who};putConfig();
+    logCouncil('<b>'+esc(user.name)+'</b> выдал(а) код для «'+esc(who)+'»');
+    closeModal();
+    openModal('<button class="x" data-x>×</button><h2>Код для «'+esc(who)+'»</h2><div class="codebox">'+code+'</div><p style="color:var(--ink-2);margin-top:8px">Передай лично. Ранг привязан к записи Джедая.</p>');
+  };
+};
 </script>
 </body>
 </html>
