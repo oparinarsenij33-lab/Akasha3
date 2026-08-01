@@ -927,5 +927,76 @@ function renderHallEvents(){
 if(typeof OPEN!=='undefined'&&OPEN){try{renderSchedule();renderHallEvents();renderLibrary()}catch(e){console.warn('addon repaint',e)}}
 })();
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: восстановление мастер-ключа + аварийный люк основателя ===== */
+/* Отдельный скрипт: если в нём что-то чихнёт — вход по обычным кодам и база не пострадают. */
+(function(){
+
+/* 1) Возвращаем мастер-ключ основателя в базу ТОЧЕЧНО (не затирая остальные коды) */
+function restoreFounderKey(){
+  try{
+    config.codes = config.codes || {};
+    config.codes['JEDI-2026'] = true;                 // в память — сразу
+    M('config').update({'codes.JEDI-2026': true})     // в облако — один ключ внутри codes
+      .catch(function(){                              // если документа config ещё нет — создадим
+        M('config').set({codes:{'JEDI-2026':true},heraldUrl:'',heraldData:'',libCats:null},{merge:true}).catch(function(){});
+      });
+  }catch(e){}
+}
+restoreFounderKey();
+
+/* 2) Завершение входа (общее для люка и штатной логики) */
+function finishEnter(m){
+  user = {name:m.name, rank:m.rank};
+  if($('#f-remember').checked) localStorage.setItem('archive_user', JSON.stringify(user));
+  else localStorage.removeItem('archive_user');
+  if(document.activeElement) document.activeElement.blur();
+  var g=$('#gate'); if(g){ g.classList.remove('active'); g.style.display='none'; }
+  window.scrollTo(0,0); openApp(); window.scrollTo(0,0); setTimeout(function(){window.scrollTo(0,0)},60);
+}
+
+/* 3) Аварийный люк основателя: JEDI-2026 пускает ВСЕГДА, ранг берёт из базы */
+function founderLogin(n){
+  db.collection('members').doc(mid(n)).get().then(function(md){
+    var m = md.exists ? md.data() : null;
+    if(!m){ m={name:n,rank:'Верховный Магистр',status:'Ученик',title:'Основатель Архива',inCouncil:true,teacher:'',progress:seedProgress('Верховный Магистр'),bio:'',avatarUrl:null,lastSeen:Date.now(),enteredOnce:true}; }
+    m.lastSeen = Date.now(); m.enteredOnce = true;     // ранг/прогресс основателя НЕ трогаем
+    putMember(m);
+    logCouncil('Основатель <b>'+esc(m.name)+'</b> вошёл(а) в Архив · '+m.rank);
+    finishEnter(m);
+  }).catch(function(){                                  // оффлайн — пустим с тем, что есть в памяти
+    var m = findMember(n) || {name:n,rank:'Верховный Магистр',status:'Ученик',title:'Основатель Архива',inCouncil:true,teacher:'',progress:[],bio:'',avatarUrl:null,lastSeen:Date.now(),enteredOnce:true};
+    finishEnter(m);
+  });
+}
+
+/* 4) Новая универсальная функция входа (перезаписывает старую глобальную enter) */
+function enter(){
+  var n=$('#f-name').value.trim(), c=$('#f-code').value.trim(), msg=$('#gate-msg'); msg.textContent='';
+  if(!n){ $('#fld-name').classList.add('err'); setTimeout(function(){$('#fld-name').classList.remove('err')},450); msg.textContent='Назови себя, путник.'; return; }
+  if(!c){ $('#fld-code').classList.add('err'); setTimeout(function(){$('#fld-code').classList.remove('err')},450); msg.textContent='Предъяви код-приглашение.'; return; }
+  if(c === 'JEDI-2026'){ founderLogin(n); return; }     // люк основателя
+  M('config').get().then(function(cd){
+    if(cd.exists) config = Object.assign({codes:{},heraldUrl:'',heraldData:'',libCats:null}, cd.data());
+    config.codes = config.codes || {}; if(!config.codes['JEDI-2026']) config.codes['JEDI-2026'] = true;
+    var rec = config.codes[c];
+    if(!rec){ msg.textContent='Неверный код-приглашение. Обратись к Мастеру.'; return; }
+    if(rec !== true && String(rec.name||'').toLowerCase() !== n.toLowerCase()){ msg.textContent='Этот код выдан другому Джедаю. Введи имя, которое назвал Мастер.'; return; }
+    db.collection('members').doc(mid(n)).get().then(function(md){
+      var m = md.exists ? md.data() : null;
+      if(rec === true){ if(!m){ m={name:n,rank:'Магистр',status:'Ученик',title:'',inCouncil:true,teacher:'',progress:seedProgress('Магистр'),bio:'',avatarUrl:null,lastSeen:Date.now(),enteredOnce:true}; } }
+      else { if(!m){ msg.textContent='Ты ещё не внесён в реестр Ордена. Обратись к Мастеру.'; return; } }
+      m.lastSeen = Date.now(); m.enteredOnce = true; putMember(m);
+      logCouncil('В Орден вошёл(а) <b>'+esc(m.name)+'</b> · '+m.rank);
+      finishEnter(m);
+    }).catch(function(err){ msg.textContent='Ошибка чтения реестра. Проверь связь и повтори.'; console.warn(err); });
+  }).catch(function(err){ msg.textContent='Ошибка чтения кодов. Проверь связь и повтори.'; console.warn(err); });
+}
+
+/* 5) Вешаем новую enter на кнопку (клавиша Enter подхватит её автоматически) */
+var _eb = $('#enter'); if(_eb) _eb.onclick = enter;
+
+})();
+</script>
 </body>
 </html>
