@@ -498,11 +498,146 @@ function addBook(){openModal(`<button class="x" data-x>×</button><h2>Новый
 }
 function buildWeek(){const wd=$('#week');if(!wd||wd.children.length)return;const now=new Date(),names=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const c=document.createElement('div');c.className='day'+(d.toDateString()===now.toDateString()?' today':'');c.innerHTML=`<span>${names[i]}</span><b>${d.getDate()}</b>`;wd.appendChild(c)}}
 function renderSchedule(){
-  const can=isMaster(user);$('#admin-sched').style.display=can?'block':'none';
-  if(can&&!$('#admin-sched').children.length){$('#admin-sched').innerHTML=`<div class="sec-h"><h2>Добавить событие</h2></div><div class="field"><label>Время</label><input id="sch-t" type="text"></div><div class="field"><label>Название</label><input id="sch-title" type="text"></div><div class="field"><label>Место</label><input id="sch-where" type="text"></div><button class="btn small" id="sch-add" style="margin-top:12px">Внести</button>`;$('#sch-add').onclick=()=>{const ti=$('#sch-title').value.trim();if(!ti)return;schedule.push({day:'soon',t:$('#sch-t').value.trim()||'—',title:ti,where:$('#sch-where').value.trim()});putSchedule();logCouncil('<b>'+esc(user.name)+'</b> добавил(а) «'+esc(ti)+'»');$('#sch-t').value=$('#sch-title').value=$('#sch-where').value='';renderSchedule();renderHallEvents();}}
-  const evs=schedule.slice().reverse();
-  $('#sched-list').innerHTML=evs.map((e,i)=>{const realIdx=schedule.length-1-i;return `<div class="ev"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span>${can?`<button class="del" data-sd="${realIdx}">удалить</button>`:''}</div>`}).join('')||'<p class="empty-note">Пусто.</p>';
-  $$('#sched-list [data-sd]').forEach(b=>b.onclick=()=>{schedule.splice(+b.dataset.sd,1);putSchedule();renderSchedule();renderHallEvents()});
+  try{
+    const can=isMaster(user);
+    // Календарь
+    const dt=_parse(selectedDate);
+    const y=dt.getFullYear(),m=dt.getMonth();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    let firstDay=new Date(y,m,1).getDay();if(firstDay===0)firstDay=7;
+    const months=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    
+    // ИСПРАВЛЕНИЕ: создаём календарь через createElement, а не innerHTML
+    const calDiv=document.createElement('div');
+    calDiv.style.marginBottom='16px';
+    
+    const navDiv=document.createElement('div');
+    navDiv.style.cssText='display:flex;align-items:center;gap:12px;margin-bottom:8px';
+    
+    const prevBtn=document.createElement('button');
+    prevBtn.className='btn ghost small';
+    prevBtn.textContent='‹';
+    prevBtn.id='cal-prev';
+    
+    const monthSpan=document.createElement('span');
+    monthSpan.style.cssText='font-family:Jost;font-size:14px;color:var(--ink-2)';
+    monthSpan.textContent=months[m]+' '+y;
+    
+    const nextBtn=document.createElement('button');
+    nextBtn.className='btn ghost small';
+    nextBtn.textContent='›';
+    nextBtn.id='cal-next';
+    
+    const todayBtn=document.createElement('button');
+    todayBtn.className='btn ghost small';
+    todayBtn.textContent='СЕГОДНЯ';
+    todayBtn.id='cal-today';
+    
+    navDiv.appendChild(prevBtn);
+    navDiv.appendChild(monthSpan);
+    navDiv.appendChild(nextBtn);
+    navDiv.appendChild(todayBtn);
+    calDiv.appendChild(navDiv);
+    
+    const gridDiv=document.createElement('div');
+    gridDiv.id='cal-grid';
+    gridDiv.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:4px';
+    
+    for(let i=1;i<firstDay;i++){
+      const empty=document.createElement('div');
+      gridDiv.appendChild(empty);
+    }
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=y+'-'+_pad2(m+1)+'-'+_pad2(d);
+      const isSel=dateStr===selectedDate;
+      const isToday=(new Date(y,m,d)).toDateString()===new Date().toDateString();
+      
+      const dayDiv=document.createElement('div');
+      dayDiv.dataset.date=dateStr;
+      dayDiv.style.cssText='padding:6px;text-align:center;border-radius:4px;cursor:pointer;background:'+(isSel?'var(--gold-2)':'transparent')+';color:'+(isSel?'#fff':(isToday?'var(--ink-2)':'var(--ink)'))+';font-weight:500';
+      dayDiv.textContent=d;
+      gridDiv.appendChild(dayDiv);
+    }
+    calDiv.appendChild(gridDiv);
+    
+    // Таблица
+    let tbl='<div style="margin-top:8px"><button class="btn small" id="sch-add-row">+ Добавить строку</button>';
+    if(can)tbl+='<button class="btn ghost small" id="sch-add-col">+ Добавить столбец</button>';
+    tbl+='</div><div style="overflow-x:auto;max-width:100%"><table id="sched-table" style="width:100%;border-collapse:collapse;min-width:600px;border:1px solid var(--line);background:var(--card)"><thead><tr>';
+    const cols=schedule.cols||['Дата','Время','Учебный план / Тема','Что нужно','Учитель'];
+    cols.forEach((col,i)=>{
+      tbl+='<th style="padding:10px 12px;border:1px solid var(--line-soft);background:linear-gradient(180deg,#FFFBF0,#F7EED4);font-family:Jost;font-size:12px;text-align:left;white-space:nowrap">';
+      if(can)tbl+='<span contenteditable="true" class="sch-col-name">'+esc(col)+'</span> <button class="iconbtn dng" data-delcol="'+i+'" title="Удалить столбец"><svg><use href="#i-trash"/></svg></button>';
+      else tbl+=esc(col);
+      tbl+='</th>';
+    });
+    if(can)tbl+='<th style="width:44px"></th>';
+    tbl+='</tr></thead><tbody>';
+    const rows=schedule.rows||[];
+    rows.forEach((row,i)=>{
+      tbl+='<tr>';
+      row.forEach((cell,j)=>{
+        tbl+='<td style="padding:8px;min-height:32px;border:1px solid var(--line-soft);vertical-align:top"><span contenteditable="true" class="sch-cell">'+esc(cell||'')+'</span></td>';
+      });
+      if(can)tbl+='<td style="padding:6px;border:1px solid var(--line-soft);text-align:center"><button class="iconbtn dng" data-delrow="'+i+'" title="Удалить строку"><svg><use href="#i-trash"/></svg></button></td>';
+      tbl+='</tr>';
+    });
+    tbl+='</tbody></table></div>';
+    
+    let saveBtn='';
+    if(can&&!schedule.editMode)saveBtn='<div style="margin-top:16px"><button class="btn" id="sch-save-table">Сохранить таблицу</button></div>';
+    
+    $('#sched-list').innerHTML='';
+    $('#sched-list').appendChild(calDiv);
+    $('#sched-list').insertAdjacentHTML('beforeend',tbl+saveBtn);
+    
+    // Кнопки календаря
+    $('#cal-prev').onclick=()=>{const d=_parse(selectedDate);d.setMonth(d.getMonth()-1);selectedDate=_iso(d);renderSchedule();};
+    $('#cal-next').onclick=()=>{const d=_parse(selectedDate);d.setMonth(d.getMonth()+1);selectedDate=_iso(d);renderSchedule();};
+    $('#cal-today').onclick=()=>{selectedDate=_iso(new Date());renderSchedule();};
+    
+    // Клик по дням
+    $('#cal-grid').addEventListener('click',function(e){
+      if(e.target.tagName==='DIV'&&e.target.dataset.date){
+        selectedDate=e.target.dataset.date;
+        renderSchedule();
+      }
+    });
+    
+    // Кнопки таблицы
+    const ar=$('#sch-add-row');if(ar)ar.onclick=()=>{schedule.rows=schedule.rows||[];schedule.rows.push(cols.map(()=>''));putSchedule();renderSchedule();};
+    const ac=$('#sch-add-col');if(ac)ac.onclick=()=>{schedule.cols=schedule.cols||[];schedule.cols.push('Новый столбец');putSchedule();renderSchedule();};
+    $('#sched-table').querySelectorAll('[data-delcol]').forEach(btn=>{btn.onclick=function(){const idx=+this.dataset.delcol;schedule.cols.splice(idx,1);schedule.rows.forEach(r=>r.splice(idx,1));putSchedule();renderSchedule();};});
+    $('#sched-table').querySelectorAll('[data-delrow]').forEach(btn=>{btn.onclick=function(){const idx=+this.dataset.delrow;schedule.rows.splice(idx,1);putSchedule();renderSchedule();};});
+    
+    // Сохранить таблицу
+    const sv=$('#sch-save-table');if(sv)sv.onclick=()=>{schedule.editMode=true;putSchedule();renderSchedule();};
+    
+    // Автосохранение
+    $('#sched-table').addEventListener('blur',function(e){
+      if(e.target.classList.contains('sch-cell')){
+        const tr=e.target.closest('tr'),td=e.target.closest('td');
+        const rowIdx=[...tr.parentNode.children].indexOf(tr);
+        const colIdx=[...td.parentNode.children].indexOf(td);
+        if(rowIdx>=0&&colIdx>=0&&schedule.rows&&schedule.rows[rowIdx]){
+          schedule.rows[rowIdx][colIdx]=e.target.textContent.trim();
+          putSchedule();
+        }
+      }
+      if(e.target.classList.contains('sch-col-name')){
+        const colIdx=[...e.target.parentNode.parentNode.children].indexOf(e.target.parentNode);
+        if(colIdx>=0&&schedule.cols){
+          schedule.cols[colIdx]=e.target.textContent.trim();
+          putSchedule();
+        }
+      }
+    },true);
+    
+    runReveals();
+  }catch(err){
+    console.error('renderSchedule',err);
+    $('#sched-list').innerHTML='<pre style="color:#a8472b;white-space:pre-wrap;padding:14px;font-family:Jost;font-size:12px;border:1px dashed #a8472b">Ошибка расписания:\n'+esc(String(err.message||err))+'\n'+esc(String(err.stack||''))+'</pre>';
+  }
 }
 function renderHallEvents(){$('#hall-events').innerHTML=schedule.filter(e=>e.day==='today').map(e=>`<div class="ev rv"><span class="t">${esc(e.t)}</span><span class="node"></span><span><h4>${esc(e.title)}</h4><p>${esc(e.where||'')}</p></span></div>`).join('');runReveals()}
 function chanTitle(){if(activeChannel==='general')return{name:'Общий зал',sub:'все члены Ордена',ava:true};if(activeChannel==='council')return{name:'Совет Мастеров',sub:'только члены Совета',ava:true};return{name:activeChannel.slice(3),sub:'',ava:false}}
