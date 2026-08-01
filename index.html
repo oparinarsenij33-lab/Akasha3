@@ -379,7 +379,7 @@ function goto(tab){$$('.page').forEach(p=>p.classList.remove('active'));const pg
 $$('.tab').forEach(b=>b.onclick=()=>goto(b.dataset.tab));
 document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]');if(g)goto(g.dataset.goto)});
 function lessonStatusMap(){const idx=ri(user.rank);const me=findMember(user.name);const prog=(me&&me.progress)||[];const map={};let open=0,firstOpen=null,firstLocked=null,done=0;allLessons().forEach(({l})=>{let s;if(l.minRank>idx){s='locked';if(!firstLocked)firstLocked=l.id}else if(prog.includes(l.id)){s='done';done++;if(!firstOpen)firstOpen=l.id}else{s='open';open++;if(!firstOpen)firstOpen=l.id}map[l.id]=s});const avail=allLessons().filter(x=>x.l.minRank<=idx).length;return{map,openCount:open+done,done,avail,firstOpen,firstLocked}}
-function renderHallHints(){const{openCount,avail}=lessonStatusMap();$('#hall-lesson-hint').textContent='Открыто '+openCount+' из '+avail+' доступных уроков';$('#hall-lib-hint').textContent=library.length+' трудов в хранилище';$('#hall-sched-hint').textContent=schedule.length+' событий в расписании'}
+function renderHallHints(){ if(!user) return; var st=lessonStatusMap();
 function buildTree(){
   const can=isMaster(user);const{map}=lessonStatusMap();
   $('#tree-admin').innerHTML=can?`<button class="btn small" id="add-year"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить учебный год</button>`:'';
@@ -726,6 +726,7 @@ function wireBack(){ var b=document.getElementById('tree-back'); if(b) b.onclick
 function buildTree(){
   var can=isMaster(user),box=$('#lessons-tree'),adm=$('#tree-admin');
   if(!box) return;
+  if(!user){ box.innerHTML=''; if(adm) adm.innerHTML=''; return; }
   if(TV.level==='years') rYears(box,adm,can);
   else if(TV.level==='sections') rSections(box,adm,can);
   else if(TV.level==='chapters') rChapters(box,adm,can);
