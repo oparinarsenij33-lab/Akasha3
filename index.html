@@ -953,6 +953,119 @@ $('#gen-code').onclick=function(){
 
 /* перерисовать Совет новой версией, если приложение уже открыто */
 if(typeof OPEN!=='undefined' && OPEN){ renderAdmin(); }
+  /* ===== ПАТЧ: статус — строкой от руки + расписание-таблица по дням ===== */
+
+/* --- статус = текстовое поле (и в правке, и при приёме) --- */
+function editProgress(name){
+  var m=findMember(name); if(!m) return;
+  var checks=allLessons().map(function(o){ var done=(m.progress||[]).indexOf(o.l.id)>=0; return '<label><input type="checkbox" data-lid="'+o.l.id+'" '+(done?'checked':'')+'> '+esc(String(o.y.year))+' · '+esc(o.s.title)+' · '+esc(o.c.title)+' · '+lessonLabel(o.l)+' — '+esc(o.l.title)+'</label>'; }).join('');
+  openModal('<button class="x" data-x>×</button><p class="kicker">Решение Совета</p><h2 style="margin-top:6px">'+esc(name)+'</h2>'+
+    '<div class="field sel"><label>Ранг (ступень допуска)</label><select id="ep-rank">'+RANKS.map(function(r){return '<option value="'+r+'" '+(r===m.rank?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Статус в Ордене (впиши от руки)</label><input id="ep-status" type="text" value="'+escAttr(m.status||'Ученик')+'" placeholder="Напр.: Ученик, Рыцарь, На испытании"></div>'+
+    '<div class="field"><label>Звание / титул (впиши от руки)</label><input id="ep-title" type="text" value="'+escAttr(m.title||'')+'"></div>'+
+    '<div class="field sel"><label>Учитель</label><select id="ep-teacher"><option value="">— нет —</option>'+mastersList().filter(function(x){return x.name!==name;}).map(function(x){return '<option '+(x.name===m.teacher?'selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></div>'+
+    '<label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" '+(m.inCouncil?'checked':'')+'><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label>'+
+    '<div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">'+checks+'</div></div>'+
+    '<button class="btn" id="ep-save">Сохранить решение Совета</button>');
+  $('#ep-save').onclick=function(){
+    m.rank=$('#ep-rank').value; m.status=($('#ep-status').value||'').trim()||'Ученик'; m.title=$('#ep-title').value.trim();
+    m.teacher=$('#ep-teacher').value; m.inCouncil=$('#ep-council').checked;
+    m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid;});
+    putMember(m); logCouncil('<b>'+esc(user.name)+'</b> вынес(ла) решение по «'+esc(name)+'»: '+m.rank+' / '+m.status);
+    closeModal();
+    if(name===user.name){ user.rank=m.rank; openApp(); } else { renderProgress(); renderOrder(); renderAdmin(); buildChannels(); buildTree(); }
+    toast('Решение Совета сохранено ✦');
+  };
+}
+$('#add-member-btn').onclick=function(){
+  openModal('<button class="x" data-x>×</button><p class="kicker">Приём в Орден</p><h2 style="margin-top:6px">Новый член</h2>'+
+    '<div class="field"><label>Имя</label><input id="nm-name" type="text" placeholder="Имя Джедая"></div>'+
+    '<div class="field sel"><label>Ранг (ступень допуска)</label><select id="nm-rank">'+RANKS.map(function(r,i){return '<option value="'+r+'" '+(i===0?'selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Статус (впиши от руки)</label><input id="nm-status" type="text" value="Ученик" placeholder="Напр.: Ученик"></div>'+
+    '<div class="field"><label>Звание / титул (необяз.)</label><input id="nm-title" type="text"></div>'+
+    '<div class="field"><label>Код-приглашение (придумай сам)</label><input id="nm-code" type="text" placeholder="Напр. JEDI-KAIRA"></div>'+
+    '<button class="btn" id="nm-save">Принять в Орден</button>');
+  $('#nm-save').onclick=function(){
+    var n=$('#nm-name').value.trim(); if(!n){ toast('Введи имя'); return; } if(findMember(n)){ toast('Такое имя уже в реестре'); return; }
+    var code=$('#nm-code').value.trim(); if(!code){ toast('Задай код-приглашение'); return; }
+    if(config.codes && config.codes[code]){ toast('Этот код уже занят. Придумай другой.'); return; }
+    var rank=$('#nm-rank').value;
+    var m={name:n,rank:rank,status:($('#nm-status').value||'').trim()||'Ученик',title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:Date.now()-300000};
+    putMember(m); config.codes=config.codes||{}; config.codes[code]={name:n}; putConfig();
+    logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'» · '+rank+' · '+m.status+' · код «'+esc(code)+'»');
+    closeModal(); renderAdmin(); renderOrder(); renderProgress(); buildChannels();
+    openModal('<button class="x" data-x>×</button><h2>«'+esc(n)+'» принят(а)</h2><p style="color:var(--ink-2);margin:8px 0">Ранг «'+rank+'», статус «'+esc(m.status)+'». Передай Джедаю этот код лично:</p><div class="codebox">'+esc(code)+'</div>');
+  };
+};
+
+/* --- расписание: свободная таблица по дням --- */
+var DEFAULT_SCHED_COLS=[{id:'time',label:'Время'},{id:'plan',label:'Учебный план / тема'},{id:'need',label:'Что нужно для урока'},{id:'teacher',label:'Учитель'}];
+var schedDate=(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);})();
+function _pad2(n){return ('0'+n).slice(-2);}
+function _iso(d){return d.getFullYear()+'-'+_pad2(d.getMonth()+1)+'-'+_pad2(d.getDate());}
+function _parse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function _addD(s,n){var d=_parse(s);d.setDate(d.getDate()+n);return _iso(d);}
+function _mon(s){var d=_parse(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return _iso(d);}
+var _WD=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
+function ensureSched(){
+  if(!config.schedCols||!config.schedCols.length){config.schedCols=DEFAULT_SCHED_COLS.slice();putConfig();}
+  var ch=false; schedule=schedule.map(function(e){ if(e&&e.cols&&e.date) return e; ch=true; var d=(e&&e.day==='today')?_iso(new Date()):((e&&e.day==='soon')?_addD(_iso(new Date()),1):_iso(new Date())); return {id:e.id||uid('E'),date:d,cols:{time:e.t||'',plan:e.title||'',need:e.where||'',teacher:''}}; });
+  if(ch) putSchedule();
+}
+function buildWeek(){ /* лента дат рисуется внутри renderSchedule */ }
+function renderSchedule(){
+  ensureSched(); var can=isMaster(user); var today=_iso(new Date());
+  var mon=_mon(schedDate), days=[]; for(var i=0;i<7;i++) days.push(_addD(mon,i));
+  var w='<div style="display:flex;align-items:center;gap:8px;margin:6px 0 14px;flex-wrap:wrap"><button class="btn ghost small" id="sch-prevw">‹ неделя</button><button class="btn ghost small" id="sch-today">сегодня</button><button class="btn ghost small" id="sch-nextw">неделя ›</button><span style="margin-left:auto;font-family:Jost;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">'+esc(schedDate)+'</span></div><div class="week" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
+  days.forEach(function(ds){var dd=_parse(ds);var on=ds===schedDate;w+='<div class="day'+(on?' today':'')+'" data-sd="'+ds+'" style="cursor:pointer"><span>'+_WD[(dd.getDay()+6)%7]+'</span><b>'+dd.getDate()+'</b>'+(ds===today&&!on?'<span style="font-size:9px">·</span>':'')+'</div>';});
+  w+='</div>'; $('#week').innerHTML=w;
+  var tb=''; if(can){ tb='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px"><button class="btn small" id="sch-addrow"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить занятие</button><button class="btn ghost small" id="sch-cols">⚙ Столбцы таблицы</button></div>'; }
+  $('#admin-sched').innerHTML=tb; $('#admin-sched').style.display='block';
+  var cols=config.schedCols, rows=schedule.filter(function(e){return e.date===schedDate;});
+  var t='<div style="overflow-x:auto;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow)"><table style="width:100%;border-collapse:collapse;min-width:560px"><thead><tr>';
+  cols.forEach(function(c){t+='<th style="text-align:left;padding:11px 12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-3);border-bottom:2px solid var(--line);white-space:nowrap;background:linear-gradient(180deg,#FFFBF0,#F7EED4)">'+esc(c.label)+'</th>';});
+  if(can) t+='<th style="width:84px;border-bottom:2px solid var(--line);background:linear-gradient(180deg,#FFFBF0,#F7EED4)"></th>';
+  t+='</tr></thead><tbody>';
+  if(!rows.length){ t+='<tr><td colspan="'+(cols.length+(can?1:0))+'" style="padding:22px 12px;color:var(--ink-2);font-family:Jost;font-size:12px;letter-spacing:.06em;text-align:center">На этот день занятий нет.'+(can?' Нажми «Добавить занятие».':'')+'</td></tr>'; }
+  rows.forEach(function(e,idx){ t+='<tr class="sch-row" data-eid="'+e.id+'" style="cursor:'+(can?'pointer':'default')+';transition:background .2s;background:'+(idx%2?'rgba(184,145,47,.04)':'transparent')+'">'; cols.forEach(function(c){t+='<td style="padding:11px 12px;border-bottom:1px solid var(--line-soft);font-size:14px;vertical-align:top">'+esc((e.cols&&e.cols[c.id])?e.cols[c.id]:'—')+'</td>';}); if(can) t+='<td style="padding:8px;border-bottom:1px solid var(--line-soft);white-space:nowrap"><button class="iconbtn" data-editrow="'+e.id+'"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delrow="'+e.id+'"><svg><use href="#i-trash"/></svg></button></td>'; t+='</tr>'; });
+  t+='</tbody></table></div>'; $('#sched-list').innerHTML=t;
+  $('#week').querySelectorAll('[data-sd]').forEach(function(el){el.onclick=function(){schedDate=el.dataset.sd;renderSchedule();};});
+  var pw=$('#sch-prevw'); if(pw) pw.onclick=function(){schedDate=_addD(_mon(schedDate),-7);renderSchedule();};
+  var nw=$('#sch-nextw'); if(nw) nw.onclick=function(){schedDate=_addD(_mon(schedDate),7);renderSchedule();};
+  var td=$('#sch-today'); if(td) td.onclick=function(){schedDate=_iso(new Date());renderSchedule();};
+  var ar=$('#sch-addrow'); if(ar) ar.onclick=addSchedRow;
+  var cs=$('#sch-cols'); if(cs) cs.onclick=editSchedCols;
+  $('#sched-list').querySelectorAll('[data-editrow]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();editSchedRow(b.dataset.editrow);};});
+  $('#sched-list').querySelectorAll('[data-delrow]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();delSchedRow(b.dataset.delrow);};});
+  $('#sched-list').querySelectorAll('.sch-row').forEach(function(tr){tr.onmouseenter=function(){tr.style.background='rgba(217,182,85,.10)';};tr.onmouseleave=function(){tr.style.background='';};tr.onclick=function(){if(can)editSchedRow(tr.dataset.eid);};});
+  runReveals();
+}
+function addSchedRow(){ var e={id:uid('E'),date:schedDate,cols:{}}; schedule.push(e); putSchedule(); editSchedRow(e.id); }
+function editSchedRow(id){ var e=null; for(var i=0;i<schedule.length;i++){if(schedule[i].id===id){e=schedule[i];break;}} if(!e)return; var cols=config.schedCols;
+  var h='<button class="x" data-x>×</button><p class="kicker">Занятие · '+esc(e.date)+'</p><h2 style="margin-top:6px">'+((e.cols&&(e.cols.plan||e.cols.time))?'Править занятие':'Новое занятие')+'</h2>';
+  cols.forEach(function(c){ h+='<div class="field"><label>'+esc(c.label)+'</label><input id="sr-'+c.id+'" type="text" value="'+escAttr((e.cols&&e.cols[c.id])||'')+'"></div>'; });
+  h+='<button class="btn" id="sr-save">Сохранить</button>'; openModal(h);
+  $('#sr-save').onclick=function(){ e.cols=e.cols||{}; cols.forEach(function(c){ e.cols[c.id]=($('#sr-'+c.id).value||'').trim(); }); putSchedule(); if(isMaster(user)) logCouncil('<b>'+esc(user.name)+'</b> обновил(а) занятие '+esc(e.date)+' · '+esc(e.cols.plan||e.cols.time||'')); closeModal(); renderSchedule(); renderHallEvents(); toast('Занятие сохранено ✦'); };
+}
+function delSchedRow(id){ confirmModal('Удалить это занятие?',function(){ schedule=schedule.filter(function(x){return x.id!==id;}); putSchedule(); renderSchedule(); renderHallEvents(); toast('Занятие удалено'); }); }
+function editSchedCols(){
+  var tmp=config.schedCols.map(function(c){return {id:c.id,label:c.label};});
+  function draw(){
+    var h='<button class="x" data-x>×</button><p class="kicker">Столбцы таблицы расписания</p><h2 style="margin-top:6px">Настроить столбцы</h2><p style="color:var(--ink-2);font-family:Jost;font-size:12px;margin:8px 0">Переименуй, удали или добавь столбцы — изменения применятся ко всем дням.</p>';
+    tmp.forEach(function(c,i){ h+='<div class="field" style="display:flex;gap:8px;align-items:center"><input id="sc-'+i+'" type="text" value="'+escAttr(c.label)+'" style="flex:1"><button class="iconbtn dng" data-dc="'+i+'" '+(tmp.length<=1?'disabled style="opacity:.4;cursor:default"':'')+' title="Удалить столбец"><svg><use href="#i-trash"/></svg></button></div>'; });
+    h+='<div class="field" style="display:flex;gap:8px;align-items:center;margin-top:14px"><input id="sc-new" type="text" placeholder="Название нового столбца" style="flex:1"><button class="btn small" id="sc-add" style="margin:0">+ столбец</button></div>';
+    h+='<button class="btn" id="sc-done" style="margin-top:16px">Готово</button>';
+    $('#modal').innerHTML=h; $('#modal').querySelectorAll('[data-x]').forEach(function(b){b.onclick=closeModal;});
+    tmp.forEach(function(c,i){ var inp=$('#sc-'+i); if(inp) inp.oninput=function(){tmp[i].label=inp.value;}; var db=$('#modal').querySelector('[data-dc="'+i+'"]'); if(db) db.onclick=function(){ if(tmp.length<=1)return; tmp.splice(i,1); draw(); }; });
+    $('#sc-add').onclick=function(){ var v=$('#sc-new').value.trim(); if(!v)return; tmp.push({id:uid('col'),label:v}); draw(); };
+    $('#sc-done').onclick=function(){ var out=tmp.filter(function(c){return c.label&&c.label.trim();}).map(function(c){return {id:c.id,label:c.label.trim()};}); if(!out.length){toast('Оставь хотя бы один столбец');return;} config.schedCols=out; putConfig(); logCouncil('<b>'+esc(user.name)+'</b> изменил(а) столбцы расписания'); closeModal(); renderSchedule(); };
+  }
+  openModal(''); draw();
+}
+function renderHallEvents(){ ensureSched(); var today=_iso(new Date()); var evs=schedule.filter(function(e){return e.date===today;});
+  $('#hall-events').innerHTML=evs.length?evs.map(function(e){var c=e.cols||{};return '<div class="ev rv"><span class="t">'+esc(c.time||'—')+'</span><span class="node"></span><span><h4>'+esc(c.plan||'Занятие')+'</h4><p>'+esc(c.teacher?('Учитель: '+c.teacher):(c.need||''))+'</p></span></div>';}).join(''):''; runReveals();
+}
+if(typeof OPEN!=='undefined' && OPEN){ renderSchedule(); renderHallEvents(); }
 </script>
 </body>
 </html>
