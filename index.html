@@ -814,5 +814,122 @@ restoreFounderKey();
 if(FS){M('config').get().then(function(d){if(d.exists){var c=d.data()||{};if(c.heraldData)applyHerald(c.heraldData)}}).catch(function(){})}
 setInterval(function(){if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: «Прочитано» (уроки+книги) + фикс Герба + фикс Биографии ===== */
+/* Отдельный скрипт в конце: переопределяет нужные функции, вход и базу не ломает. */
+
+/* --- 1) putConfig больше НЕ трогает герб (герба живёт отдельно через saveHerald) --- */
+function putConfig(){
+  if(!FS) return;
+  var payload={};
+  for(var k in config){ if(k==='heraldData'||k==='heraldUrl') continue; payload[k]=config[k]; }
+  M('config').set(payload,{merge:true});
+}
+function saveHerald(d){ config.heraldData=d; config.heraldUrl=d; applyHerald(d); M('config').update({heraldData:d,heraldUrl:d}); }
+var _hi2=$('#herald-input');
+if(_hi2)_hi2.addEventListener('change',function(e){
+  var f=e.target.files[0]; e.target.value='';
+  if(!f||!f.type.startsWith('image/'))return;
+  if(user && !isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return;}
+  readImage(f,function(d){ saveHerald(d); toast('Герб Ордена обновлён и сохранён ✦'); });
+});
+
+/* --- 2) нормализация: у каждого члена теперь есть readBooks --- */
+function normalizeRoster(){roster.forEach(function(m){m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];if(!Array.isArray(m.readBooks))m.readBooks=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
+
+/* --- 3) страница урока: кнопка «Прочитано» (самоотметка) --- */
+function rLessonPage(box,adm,can){
+  adm.innerHTML='';
+  var f=findLesson(TV.lid);if(!f){TV.level='lessons';buildTree();return}
+  var l=f.l;
+  var me=user?findMember(user.name):null;
+  var done=!!(me&&me.progress&&me.progress.indexOf(l.id)>=0);
+  var markBtn=user?'<button class="btn small" id="ol-mark" style="margin:0 8px 0 0;'+(done?'background:var(--green);background:linear-gradient(135deg,#4d6e5b,var(--green))':'')+'">'+(done?'✓ Прочитано':'Отметить прочитанным')+'</button>':'';
+  box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+(can?'<button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button>':'')+markBtn+'</div><div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
+  wireBack();
+  if(can&&$('#ol-edit'))$('#ol-edit').onclick=function(){editLesson(l.id,null)};
+  var mb=$('#ol-mark');if(mb)mb.onclick=function(){
+    if(!me)return; me.progress=me.progress||[]; var i=me.progress.indexOf(l.id);
+    if(i>=0)me.progress.splice(i,1); else me.progress.push(l.id);
+    putMember(me); toast(i>=0?'Отметка снята':'Урок отмечен прочитанным ✦'); buildTree();
+  };
+}
+
+/* --- 4) библиотека: кнопка «Прочитано» у каждой книги --- */
+function renderLibrary(){
+  ensureLibCats();var can=isMaster(user);
+  $('#lib-admin').innerHTML=can?'<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд</button> <button class="btn ghost small" id="add-cat"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить раздел</button>':'';
+  if(can&&$('#add-book'))$('#add-book').onclick=function(){addBook(null)};
+  if(can&&$('#add-cat'))$('#add-cat').onclick=function(){var v=prompt('Название нового раздела библиотеки:');if(!v||!v.trim())return;config.libCats.push({id:uid('cat'),label:v.trim()});putConfig();renderLibrary();toast('Раздел добавлен ✦')};
+  var cats=[['all','Все']].concat((config.libCats||[]).map(function(c){return[c.id,c.label]}));
+  $('#lib-chips').innerHTML=cats.map(function(c){var del=(can&&c[0]!=='all')?' <button class="iconbtn dng" data-delcat="'+c[0]+'" style="width:20px;height:20px;vertical-align:-2px" title="Удалить раздел"><svg style="width:12px;height:12px"><use href="#i-trash"/></svg></button>':'';return '<button class="chip '+(libFilter===c[0]?'on':'')+'" data-f="'+c[0]+'">'+esc(c[1])+del+'</button>'}).join('');
+  $$('#lib-chips .chip').forEach(function(b){b.onclick=function(e){if(e.target.closest('[data-delcat]'))return;libFilter=b.dataset.f;renderLibrary()}});
+  $$('#lib-chips [data-delcat]').forEach(function(b){b.onclick=function(e){e.stopPropagation();confirmModal('Удалить раздел? (книги останутся)',function(){config.libCats=config.libCats.filter(function(c){return c.id!==b.dataset.delcat});if(libFilter===b.dataset.delcat)libFilter='all';putConfig();renderLibrary()})}});
+  var me=user?findMember(user.name):null; var rb=(me&&me.readBooks)||[];
+  var shown=library.filter(function(b){return libFilter==='all'||b.cat===libFilter});
+  $('#lib-list').innerHTML=shown.length?shown.map(function(b){
+    var open=b.url?'<a class="dl" href="'+escAttr(b.url)+'" target="_blank" rel="noopener">Открыть</a>':'<span class="dl">Нет ссылки</span>';
+    var tools=can?'<button class="iconbtn" data-editb="'+b.id+'" title="Править"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delb="'+b.id+'"><svg><use href="#i-trash"/></svg></button>':'';
+    var cover=b.cover?'<div class="cover" style="padding:0;overflow:hidden"><img src="'+escAttr(b.cover)+'" style="width:100%;height:100%;object-fit:cover;display:block"></div>':'<div class="cover">'+esc(b.letter||b.title[0]||'?')+'</div>';
+    var ann=b.ann?'<div class="b-ann" id="ann-'+b.id+'" style="display:none">'+esc(b.ann)+'</div><button class="b-ann-toggle" data-ann="'+b.id+'">Читать аннотацию ▾</button>':'';
+    var rdone=rb.indexOf(b.id)>=0;
+    var readBtn=user?'<button class="btn ghost small" data-readb="'+b.id+'" style="margin:0;padding:8px 12px;white-space:nowrap;'+(rdone?'background:linear-gradient(135deg,#4d6e5b,var(--green));border-color:var(--green);color:#fff':'')+'">'+(rdone?'✓ Прочитано':'Прочитано')+'</button>':'';
+    return '<div class="book rv">'+cover+'<div class="b-info"><h4>'+esc(b.title)+'</h4><p>'+esc(b.author||'')+' · '+esc(b.size||'')+'</p>'+ann+'</div>'+readBtn+tools+open+'</div>';
+  }).join(''):'<p class="empty-note">Пусто.</p>';
+  $$('#lib-list [data-delb]').forEach(function(b){b.onclick=function(){confirmModal('Удалить труд?',function(){library=library.filter(function(x){return x.id!==b.dataset.delb});putLibrary();renderLibrary()})}});
+  $$('#lib-list [data-editb]').forEach(function(b){b.onclick=function(){addBook(b.dataset.editb)}});
+  $$('#lib-list [data-ann]').forEach(function(b){b.onclick=function(){var a=$('#ann-'+b.dataset.ann);if(!a)return;var open=a.style.display==='none';a.style.display=open?'block':'none';b.textContent=open?'Скрыть аннотацию ▴':'Читать аннотацию ▾'}});
+  $$('#lib-list [data-readb]').forEach(function(b){b.onclick=function(){
+    if(!me)return; me.readBooks=me.readBooks||[]; var id=b.dataset.readb; var i=me.readBooks.indexOf(id);
+    if(i>=0)me.readBooks.splice(i,1); else me.readBooks.push(id);
+    putMember(me); toast(i>=0?'Отметка снята':'Книга отмечена прочитанной ✦'); renderLibrary();
+  }});
+  runReveals();
+}
+
+/* --- 5) таблица успеваемости: теперь видно и книги --- */
+function renderProgress(){
+  var box=$('#progress-list');if(!box)return;var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
+  box.innerHTML=sorted.map(function(m){var idx=ri(m.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(m.progress||[]).indexOf(o.l.id)>=0}).length;var pct=avail.length?Math.round(passed/avail.length*100):0;var o=onlineInfo(m.name);var canEdit=isMaster(user);
+    var marks=allLessons().map(function(x){var lock=ri(x.s.rank)>idx;var pass=(m.progress||[]).indexOf(x.l.id)>=0;return '<span class="lmark '+(lock?'lock':(pass?'pass':''))+'">'+lessonLabel(x.l)+' '+(lock?'🔒':(pass?'✓':'·'))+'</span>'}).join('');
+    var rb=m.readBooks||[]; var rbc=library.filter(function(bk){return rb.indexOf(bk.id)>=0}).length;
+    var bookBlock=library.length?'<div style="margin-top:12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">Книги · прочитано '+rbc+' из '+library.length+'</div><div class="lessons" style="margin-top:4px">'+library.map(function(bk){var rp=rb.indexOf(bk.id)>=0;return '<span class="lmark '+(rp?'pass':'')+'">'+(rp?'✓ ':'· ')+esc(bk.title)+'</span>'}).join('')+'</div>':'';
+    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · уроков сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div class="lessons">'+marks+'</div>'+bookBlock+'</div>'}).join('')||'<p class="empty-note">Нет учеников.</p>';
+  $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
+}
+
+/* --- 6) профиль: кнопка «Сменить Герб Ордена» у Совета --- */
+function renderProfile(){
+  var me=findMember(user.name);if(!me)return;
+  var idx=ri(user.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(me.progress||[]).indexOf(o.l.id)>=0}).length;
+  $('#st-passed').textContent=passed;$('#st-left').textContent=Math.max(0,avail.length-passed);
+  $('#p-title').textContent=me.title?('«'+me.title+'»'):'';
+  var img=$('#profile-ava-img'),ph=$('#profile-ava-ph');
+  if(me.avatarUrl){img.src=me.avatarUrl;img.style.display='block';ph.style.display='none'}else{img.style.display='none';ph.style.display='grid'}
+  var tm=$('#teacher-mount');
+  if(isStudent(user)){tm.innerHTML='<div class="field sel"><label>Мой Учитель</label><select id="pf-teacher"><option value="">— пока нет —</option>'+mastersList().map(function(x){return '<option '+(x.name===me.teacher?'selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></div>'}
+  else{tm.innerHTML=''}
+  $('#p-teacher-line').style.display=me.teacher?'block':'none';$('#p-teacher-line').textContent=me.teacher?('Наставник: '+me.teacher):'';
+  var bm=$('#bio-mount');
+  bm.innerHTML='<div id="bio-view" class="bio">'+(me.bio||'<p>Биография пуста.</p>')+'</div><div id="bio-edit" style="display:none;margin-top:10px"></div><div style="margin-top:10px"><button class="btn ghost small" id="bio-toggle">Редактировать биографию</button></div>';
+  $('#bio-toggle').onclick=function(){var edit=$('#bio-edit'),view=$('#bio-view');if(edit.style.display==='none'){edit.style.display='block';view.style.display='none';var w=mountWriter(edit,'Расскажи о своём пути…',{});setWriterHTML(w,me.bio||'');$('#bio-toggle').textContent='Скрыть редактор'}else{edit.style.display='none';view.style.display='block';$('#bio-toggle').textContent='Редактировать биографию'}};
+  var sp=$('#save-profile');
+  if(sp&&isCouncil(user)&&!$('#change-herald')){var hb=document.createElement('button');hb.className='btn ghost';hb.id='change-herald';hb.textContent='Сменить Герб Ордена';hb.onclick=function(){$('#herald-input').click()};sp.parentNode.insertBefore(hb,sp)}
+  var exh=$('#change-herald');if(exh&&!isCouncil(user))exh.remove();
+}
+
+/* --- 7) сохранение профиля: биография больше не сбрасывается --- */
+var _sp2=$('#save-profile');
+if(_sp2)_sp2.onclick=function(){
+  var me=findMember(user.name);if(!me)return;
+  var w=$('#bio-edit .writer');
+  if(w){ me.bio=getWriterHTML(w); }            // редактор открывали → берём текст из него (открыт он или скрыт — не важно)
+  var t=$('#pf-teacher'); if(t)me.teacher=t.value;
+  putMember(me); renderProfile(); renderProgress(); renderOrder(); toast('Профиль сохранён ✦');
+};
+
+/* --- оживить после подгрузки --- */
+if(typeof OPEN!=='undefined'&&OPEN){ try{ renderProfile(); renderProgress(); renderLibrary(); }catch(e){ console.warn('addon v3',e); } }
+</script>
 </body>
 </html>
