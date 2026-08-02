@@ -815,36 +815,66 @@ if(FS){M('config').get().then(function(d){if(d.exists){var c=d.data()||{};if(c.h
 setInterval(function(){if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
 </script>
   <script>
-/* ===== НАДСТРОЙКА: «Прочитано» (уроки+книги) + фикс Герба + фикс Биографии ===== */
+<script>
+/* ===== НАДСТРОЙКА v4: «Прочитано» (уроки+книги) + рабочий Герб + фикс Биографии ===== */
 /* Отдельный скрипт в конце: переопределяет нужные функции, вход и базу не ломает. */
 
-/* --- 1) putConfig больше НЕ трогает герб (герба живёт отдельно через saveHerald) --- */
+/* --- 1) putConfig больше НЕ трогает герб (герб живёт отдельно через saveHerald) --- */
 function putConfig(){
   if(!FS) return;
   var payload={};
   for(var k in config){ if(k==='heraldData'||k==='heraldUrl') continue; payload[k]=config[k]; }
   M('config').set(payload,{merge:true});
 }
-function saveHerald(d){ config.heraldData=d; config.heraldUrl=d; applyHerald(d); M('config').update({heraldData:d,heraldUrl:d}); }
-var _hi2=$('#herald-input');
-if(_hi2)_hi2.addEventListener('change',function(e){
-  var f=e.target.files[0]; e.target.value='';
-  if(!f||!f.type.startsWith('image/'))return;
-  if(user && !isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return;}
-  readImage(f,function(d){ saveHerald(d); toast('Герб Ордена обновлён и сохранён ✦'); });
-});
 
-/* --- 2) нормализация: у каждого члена теперь есть readBooks --- */
+/* --- 2) Герб: лёгкое сжатие (JPEG, точно < 1 МБ) + надёжное сохранение --- */
+function readHerald(file,cb){
+  var r=new FileReader();
+  r.onload=function(ev){
+    var im=new Image();
+    im.onload=function(){
+      var max=384,w=im.width,h=im.height;
+      if(w>max||h>max){var k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',.82));
+    };
+    im.src=ev.target.result;
+  };
+  r.readAsDataURL(file);
+}
+function saveHerald(d){
+  config.heraldData=d; config.heraldUrl=d; applyHerald(d);
+  M('config').update({heraldData:d,heraldUrl:d}).catch(function(){
+    M('config').set({heraldData:d,heraldUrl:d},{merge:true}).catch(function(){ toast('Не удалось сохранить герб в базе'); });
+  });
+}
+/* заменяем поле загрузки герба чистым клоном (старый кривой обработчик исчезает) */
+(function(){
+  var old=document.getElementById('herald-input');
+  if(old){
+    var neu=old.cloneNode(false);
+    old.parentNode.replaceChild(neu,old);
+    neu.addEventListener('change',function(e){
+      var f=e.target.files[0]; e.target.value='';
+      if(!f||!f.type.startsWith('image/'))return;
+      if(user && !isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return;}
+      readHerald(f,function(d){ saveHerald(d); toast('Герб Ордена обновлён и сохранён ✦'); });
+    });
+  }
+})();
+
+/* --- 3) нормализация: у каждого члена есть readBooks --- */
 function normalizeRoster(){roster.forEach(function(m){m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];if(!Array.isArray(m.readBooks))m.readBooks=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
 
-/* --- 3) страница урока: кнопка «Прочитано» (самоотметка) --- */
+/* --- 4) страница урока: кнопка «Прочитано» (самоотметка) --- */
 function rLessonPage(box,adm,can){
   adm.innerHTML='';
   var f=findLesson(TV.lid);if(!f){TV.level='lessons';buildTree();return}
   var l=f.l;
   var me=user?findMember(user.name):null;
   var done=!!(me&&me.progress&&me.progress.indexOf(l.id)>=0);
-  var markBtn=user?'<button class="btn small" id="ol-mark" style="margin:0 8px 0 0;'+(done?'background:var(--green);background:linear-gradient(135deg,#4d6e5b,var(--green))':'')+'">'+(done?'✓ Прочитано':'Отметить прочитанным')+'</button>':'';
+  var markBtn=user?'<button class="btn small" id="ol-mark" style="margin:0 8px 0 0;'+(done?'background:linear-gradient(135deg,#4d6e5b,var(--green))':'')+'">'+(done?'✓ Прочитано':'Отметить прочитанным')+'</button>':'';
   box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+(can?'<button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button>':'')+markBtn+'</div><div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
   wireBack();
   if(can&&$('#ol-edit'))$('#ol-edit').onclick=function(){editLesson(l.id,null)};
@@ -855,7 +885,7 @@ function rLessonPage(box,adm,can){
   };
 }
 
-/* --- 4) библиотека: кнопка «Прочитано» у каждой книги --- */
+/* --- 5) библиотека: кнопка «Прочитано» у каждой книги --- */
 function renderLibrary(){
   ensureLibCats();var can=isMaster(user);
   $('#lib-admin').innerHTML=can?'<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд</button> <button class="btn ghost small" id="add-cat"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить раздел</button>':'';
@@ -887,7 +917,7 @@ function renderLibrary(){
   runReveals();
 }
 
-/* --- 5) таблица успеваемости: теперь видно и книги --- */
+/* --- 6) таблица успеваемости: уроки + книги --- */
 function renderProgress(){
   var box=$('#progress-list');if(!box)return;var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
   box.innerHTML=sorted.map(function(m){var idx=ri(m.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(m.progress||[]).indexOf(o.l.id)>=0}).length;var pct=avail.length?Math.round(passed/avail.length*100):0;var o=onlineInfo(m.name);var canEdit=isMaster(user);
@@ -898,7 +928,7 @@ function renderProgress(){
   $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
 }
 
-/* --- 6) профиль: кнопка «Сменить Герб Ордена» у Совета --- */
+/* --- 7) профиль: кнопка «Сменить Герб Ордена» у Совета --- */
 function renderProfile(){
   var me=findMember(user.name);if(!me)return;
   var idx=ri(user.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(me.progress||[]).indexOf(o.l.id)>=0}).length;
@@ -918,18 +948,18 @@ function renderProfile(){
   var exh=$('#change-herald');if(exh&&!isCouncil(user))exh.remove();
 }
 
-/* --- 7) сохранение профиля: биография больше не сбрасывается --- */
+/* --- 8) сохранение профиля: биография больше не сбрасывается --- */
 var _sp2=$('#save-profile');
 if(_sp2)_sp2.onclick=function(){
   var me=findMember(user.name);if(!me)return;
   var w=$('#bio-edit .writer');
-  if(w){ me.bio=getWriterHTML(w); }            // редактор открывали → берём текст из него (открыт он или скрыт — не важно)
+  if(w){ me.bio=getWriterHTML(w); }
   var t=$('#pf-teacher'); if(t)me.teacher=t.value;
   putMember(me); renderProfile(); renderProgress(); renderOrder(); toast('Профиль сохранён ✦');
 };
 
 /* --- оживить после подгрузки --- */
-if(typeof OPEN!=='undefined'&&OPEN){ try{ renderProfile(); renderProgress(); renderLibrary(); }catch(e){ console.warn('addon v3',e); } }
+if(typeof OPEN!=='undefined'&&OPEN){ try{ renderProfile(); renderProgress(); renderLibrary(); }catch(e){ console.warn('addon v4',e); } }
 </script>
 </body>
 </html>
