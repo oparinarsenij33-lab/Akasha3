@@ -303,7 +303,7 @@ function runReveals(){$$('.rv:not(.on)').forEach(function(el){io.observe(el)})}
 var M=function(id){return db.collection('meta').doc(id)};
 function putTree(){FS&&M('tree').set({data:tree})}
 function putLibrary(){FS&&M('library').set({data:library})}
-function putSchedule(){FS&&M('schedule').set({data:schedule})}
+function putSchedule(){if(!FS)return;try{M('schedule').set({data:JSON.stringify(schedule)})}catch(e){console.warn('putSchedule',e)}}
 function putLog(){FS&&M('log').set({data:councilLog})}
 function putConfig(){if(!FS)return;var payload={};for(var k in config){if(k==='heraldData'||k==='heraldUrl')continue;payload[k]=config[k];}M('config').set(payload,{merge:true})}
 function putMember(m){FS&&db.collection('members').doc(mid(m.name)).set(m,{merge:true})}
@@ -318,12 +318,12 @@ function subscribeMeta(){
   unsubMeta.forEach(function(u){try{u()}catch(_){}});unsubMeta=[];
   unsubMeta.push(M('tree').onSnapshot(function(d){if(d.exists)tree=d.data().data||[];if(OPEN){buildTree();renderFeatured();renderProgress()}},function(){}));
   unsubMeta.push(M('library').onSnapshot(function(d){if(d.exists)library=d.data().data||[];if(OPEN)renderLibrary()},function(){}));
-  unsubMeta.push(M('schedule').onSnapshot(function(d){if(d.exists){var sd=d.data().data;if(sd&&sd.cols){schedule=sd}else if(Array.isArray(sd)){schedule={cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:sd.map(function(e){return[e.day==='today'?_iso(new Date()):'',e.t||'',e.title||'',e.where||'','']})}}else{schedule={cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]}}}if(OPEN){renderSchedule();renderHallEvents()}},function(){}));
+  unsubMeta.push(M('schedule').onSnapshot(function(d){var DEF={cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]};if(d.exists){var raw=d.data().data;if(typeof raw==='string'){try{var p=JSON.parse(raw);schedule=(p&&p.cols)?p:DEF;}catch(_){schedule=DEF;}}else if(raw&&raw.cols){schedule=raw;if(!Array.isArray(schedule.rows))schedule.rows=[];}else if(Array.isArray(raw)){schedule={cols:DEF.cols,rows:raw.map(function(e){return[e.day==='today'?_iso(new Date()):'',e.t||'',e.title||'',e.where||'','']})};}else{schedule=DEF;}}if(OPEN){renderSchedule();renderHallEvents();}},function(){}));
   unsubMeta.push(M('log').onSnapshot(function(d){if(d.exists)councilLog=d.data().data||[];if(OPEN)renderAdmin()},function(){}));
   unsubMeta.push(M('config').onSnapshot(function(d){if(d.exists){config=Object.assign({codes:{},heraldUrl:'',heraldData:'',libCats:null},d.data());applyHerald(config.heraldData||null);if(OPEN)renderLibrary()}},function(){}));
   unsubMeta.push(db.collection('members').onSnapshot(function(snap){roster=snap.docs.map(function(d){return d.data()});normalizeRoster();if(OPEN){renderOrder();renderProgress();renderAdmin();buildChannels();if($('#s-chats').classList.contains('active'))paintChat();if($('#s-profile').classList.contains('active'))renderProfile();renderHallHints()}},function(){}));
 }
-function seedIfEmpty(){M('tree').get().then(function(t){if(!t.exists){M('tree').set({data:[]});M('library').set({data:[]});M('schedule').set({data:{cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]}});M('log').set({data:[]});M('config').set({codes:{'JEDI-2026':true},libCats:null},{merge:true})}}).catch(function(e){console.warn('seed',e)})}
+function seedIfEmpty(){M('tree').get().then(function(t){if(!t.exists){M('tree').set({data:[]});M('library').set({data:[]});M('schedule').set({data:JSON.stringify({cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]})});M('log').set({data:[]});M('config').set({codes:{'JEDI-2026':true},libCats:null},{merge:true})}}).catch(function(e){console.warn('seed',e)})}
 function applyHerald(url){document.body.classList.toggle('has-herald',!!url);$$('.herald-img').forEach(function(im){if(im.id==='profile-ava-img')return;if(url)im.src=url;else im.removeAttribute('src')})}
 $$('.herald-trigger').forEach(function(t){t.addEventListener('click',function(){if(t.id==='profile-ava-wrap')return;var hi=$('#herald-input');if(hi)hi.click()})});
 var _hi=$('#herald-input');if(_hi)_hi.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;if(user&&!isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return}readHerald(f,function(d){saveHerald(d);toast('Герб Ордена обновлён и сохранён ✦')})});
@@ -838,6 +838,113 @@ restoreFounderKey();
 (function autoEnter(){var saved=LS('archive_user',null);if(saved&&saved.name){user={name:saved.name,rank:saved.rank||'Падаван'};var g=$('#gate');if(g){g.classList.remove('active');g.style.display='none'}openApp();window.scrollTo(0,0);setTimeout(function(){window.scrollTo(0,0)},60)}})();
 if(FS){M('config').get().then(function(d){if(d.exists){var c=d.data()||{};if(c.heraldData)applyHerald(c.heraldData)}}).catch(function(){})}
 setInterval(function(){if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
+</script>
+<script>
+/* ===== НАДСТРОЙКА: вернул кнопки редактирования расписания ===== */
+function renderSchedule(){
+  var can=!!user;
+  var calHtml=renderCalendar();
+  var dayRows=(schedule.rows||[]).filter(function(r){return normDate(r[0])===selectedDate});
+  var tbl='<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn small" id="sch-add-row">+ Занятие на этот день</button>';
+  if(can)tbl+=' <button class="btn ghost small" id="sch-add-col">+ Столбец</button>';
+  tbl+=' <span style="font-family:Jost;font-size:12px;color:var(--ink-2)">День: <b>'+esc(selectedDate)+'</b> · занятий: '+dayRows.length+'</span></div>';
+  tbl+='<div style="overflow-x:auto;max-width:100%;margin-top:10px"><table id="sched-table" style="width:100%;border-collapse:collapse;min-width:600px;border:1px solid var(--line);background:var(--card)"><thead><tr>';
+  if(!schedule.cols||!Array.isArray(schedule.cols))schedule.cols=['Дата','Время','Учебный план / Тема','Что нужно','Учитель'];
+  schedule.cols.forEach(function(col,i){
+    tbl+='<th style="padding:10px 12px;border:1px solid var(--line-soft);background:linear-gradient(180deg,#FFFBF0,#F7EED4);font-family:Jost;font-size:12px;text-align:left;white-space:nowrap">';
+    if(can&&i>0)tbl+='<span contenteditable="true" class="sch-col-name">'+esc(col)+'</span> <button class="iconbtn dng" data-delcol="'+i+'" title="Удалить столбец"><svg><use href="#i-trash"/></svg></button>';
+    else tbl+=esc(col);
+    tbl+='</th>';
+  });
+  if(can)tbl+='<th style="width:44px"></th>';
+  tbl+='</tr></thead><tbody>';
+  if(!dayRows.length){tbl+='<tr><td colspan="'+(schedule.cols.length+(can?1:0))+'" style="padding:22px 12px;color:var(--ink-2);font-family:Jost;font-size:12px;text-align:center">На этот день занятий нет. Выбери день в календаре и нажми «+ Занятие».</td></tr>'}
+  dayRows.forEach(function(row){
+    var realIdx=(schedule.rows||[]).indexOf(row);
+    tbl+='<tr data-ri="'+realIdx+'">';
+    row.forEach(function(cell,j){
+      if(j===0){tbl+='<td style="padding:8px 12px;border:1px solid var(--line-soft);vertical-align:top;color:var(--ink-2);font-family:Jost;font-size:12px">'+esc(cell||'')+'</td>'}
+      else{tbl+='<td style="padding:8px 12px;border:1px solid var(--line-soft);vertical-align:top"><span contenteditable="true" class="sch-cell" data-ri="'+realIdx+'" data-ci="'+j+'">'+esc(cell||'')+'</span></td>'}
+    });
+    if(can)tbl+='<td style="padding:6px;border:1px solid var(--line-soft);text-align:center"><button class="iconbtn dng" data-delrow="'+realIdx+'" title="Удалить"><svg><use href="#i-trash"/></svg></button></td>';
+    tbl+='</tr>';
+  });
+  tbl+='</tbody></table></div>';
+  var saveBtn=can?'<div style="margin-top:16px"><button class="btn" id="sch-save-table">Сохранить таблицу</button></div>':'';
+  $('#sched-list').innerHTML=calHtml+tbl+saveBtn;
+  var cg=$('#cal-grid');if(cg)cg.addEventListener('click',function(e){var t=e.target.closest('[data-date]');if(t){selectedDate=t.dataset.date;renderSchedule()}});
+  var cp=$('#cal-prev');if(cp)cp.onclick=function(){var d=_parse(selectedDate);d.setMonth(d.getMonth()-1);selectedDate=_iso(d);renderSchedule()};
+  var cn=$('#cal-next');if(cn)cn.onclick=function(){var d=_parse(selectedDate);d.setMonth(d.getMonth()+1);selectedDate=_iso(d);renderSchedule()};
+  var ct=$('#cal-today');if(ct)ct.onclick=function(){selectedDate=_iso(new Date());renderSchedule()};
+  var ar=$('#sch-add-row');if(ar)ar.onclick=function(){schedule.rows=schedule.rows||[];var nr=[selectedDate];for(var k=1;k<schedule.cols.length;k++)nr.push('');schedule.rows.push(nr);putSchedule();renderSchedule();toast('Занятие добавлено на '+selectedDate)};
+  var ac=$('#sch-add-col');if(ac)ac.onclick=function(){schedule.cols.push('Новый столбец');schedule.rows.forEach(function(r){r.push('')});putSchedule();renderSchedule()};
+  var stbl=$('#sched-table');
+  if(stbl){
+    stbl.querySelectorAll('[data-delcol]').forEach(function(btn){btn.onclick=function(){var idx=+this.dataset.delcol;schedule.cols.splice(idx,1);schedule.rows.forEach(function(r){r.splice(idx,1)});putSchedule();renderSchedule()}});
+    stbl.querySelectorAll('[data-delrow]').forEach(function(btn){btn.onclick=function(){var idx=+this.dataset.delrow;schedule.rows.splice(idx,1);putSchedule();renderSchedule()}});
+    stbl.addEventListener('blur',function(e){
+      if(e.target.classList.contains('sch-cell')){var ri2=+e.target.dataset.ri,ci2=+e.target.dataset.ci;if(schedule.rows[ri2]){schedule.rows[ri2][ci2]=e.target.textContent.trim();putSchedule()}}
+      if(e.target.classList.contains('sch-col-name')){var ci3=Array.prototype.indexOf.call(e.target.parentNode.parentNode.children,e.target.parentNode);if(ci3>=0&&schedule.cols){schedule.cols[ci3]=e.target.textContent.trim();putSchedule()}}
+    },true);
+  }
+  var sv=$('#sch-save-table');if(sv)sv.onclick=function(){schedule.editMode=true;putSchedule();renderSchedule();toast('Таблица сохранена ✦')};
+  if(schedule.editMode===true&&stbl){
+    stbl.querySelectorAll('.sch-cell').forEach(function(el){el.contentEditable='false';el.style.background='transparent';el.style.border='none'});
+    stbl.querySelectorAll('.iconbtn').forEach(function(btn){btn.style.display='none'});
+    if(ar)ar.style.display='none';if(sv)sv.style.display='none';
+  }
+  runReveals();
+}
+</script>
+<script>
+/* ===== ФИНАЛ: полное расписание, все кнопки всегда видны ===== */
+function renderSchedule(){
+  var calHtml=renderCalendar();
+  if(!schedule.cols||!Array.isArray(schedule.cols))schedule.cols=['Дата','Время','Учебный план / Тема','Что нужно','Учитель'];
+  if(!Array.isArray(schedule.rows))schedule.rows=[];
+  var dayRows=schedule.rows.filter(function(r){return normDate(r[0])===selectedDate});
+  var tbl='<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+    '<button class="btn small" id="sch-add-row">+ Занятие на этот день</button>'+
+    '<button class="btn ghost small" id="sch-add-col">+ Столбец</button>'+
+    '<span style="font-family:Jost;font-size:12px;color:var(--ink-2)">День: <b>'+esc(selectedDate)+'</b> · занятий: '+dayRows.length+'</span></div>';
+  tbl+='<div style="overflow-x:auto;max-width:100%;margin-top:10px"><table id="sched-table" style="width:100%;border-collapse:collapse;min-width:600px;border:1px solid var(--line);background:var(--card)"><thead><tr>';
+  schedule.cols.forEach(function(col,i){
+    tbl+='<th style="padding:10px 12px;border:1px solid var(--line-soft);background:linear-gradient(180deg,#FFFBF0,#F7EED4);font-family:Jost;font-size:12px;text-align:left;white-space:nowrap"><span contenteditable="true" class="sch-col-name">'+esc(col)+'</span> <button class="iconbtn dng" data-delcol="'+i+'" title="Удалить столбец"><svg><use href="#i-trash"/></svg></button></th>';
+  });
+  tbl+='<th style="width:44px"></th></tr></thead><tbody>';
+  if(!dayRows.length){tbl+='<tr><td colspan="'+(schedule.cols.length+1)+'" style="padding:22px 12px;color:var(--ink-2);font-family:Jost;font-size:12px;text-align:center">На этот день занятий нет. Выбери день в календаре и нажми «+ Занятие на этот день».</td></tr>';}
+  dayRows.forEach(function(row){
+    var realIdx=schedule.rows.indexOf(row);
+    tbl+='<tr data-ri="'+realIdx+'">';
+    for(var j=0;j<schedule.cols.length;j++){
+      var cell=(row&&row[j]!=null)?row[j]:'';
+      if(j===0){tbl+='<td style="padding:8px 12px;border:1px solid var(--line-soft);vertical-align:top;color:var(--ink-2);font-family:Jost;font-size:12px">'+esc(cell)+'</td>';}
+      else{tbl+='<td style="padding:8px 12px;border:1px solid var(--line-soft);vertical-align:top"><span contenteditable="true" class="sch-cell" data-ri="'+realIdx+'" data-ci="'+j+'">'+esc(cell)+'</span></td>';}
+    }
+    tbl+='<td style="padding:6px;border:1px solid var(--line-soft);text-align:center"><button class="iconbtn dng" data-delrow="'+realIdx+'" title="Удалить занятие"><svg><use href="#i-trash"/></svg></button></td>';
+    tbl+='</tr>';
+  });
+  tbl+='</tbody></table></div>';
+  tbl+='<div style="margin-top:16px"><button class="btn" id="sch-save-table">Сохранить таблицу</button></div>';
+  $('#sched-list').innerHTML=calHtml+tbl;
+  var cg=$('#cal-grid');if(cg)cg.addEventListener('click',function(e){var t=e.target.closest('[data-date]');if(t){selectedDate=t.dataset.date;renderSchedule();}});
+  var cp=$('#cal-prev');if(cp)cp.onclick=function(){var d=_parse(selectedDate);d.setMonth(d.getMonth()-1);selectedDate=_iso(d);renderSchedule();};
+  var cn=$('#cal-next');if(cn)cn.onclick=function(){var d=_parse(selectedDate);d.setMonth(d.getMonth()+1);selectedDate=_iso(d);renderSchedule();};
+  var ct=$('#cal-today');if(ct)ct.onclick=function(){selectedDate=_iso(new Date());renderSchedule();};
+  var ar=$('#sch-add-row');if(ar)ar.onclick=function(){var nr=[selectedDate];for(var k=1;k<schedule.cols.length;k++)nr.push('');schedule.rows.push(nr);putSchedule();renderSchedule();toast('Занятие добавлено на '+selectedDate);};
+  var ac=$('#sch-add-col');if(ac)ac.onclick=function(){schedule.cols.push('Новый столбец');schedule.rows.forEach(function(r){while(r.length<schedule.cols.length)r.push('');});putSchedule();renderSchedule();};
+  var stbl=$('#sched-table');
+  if(stbl){
+    stbl.querySelectorAll('[data-delcol]').forEach(function(btn){btn.onclick=function(){var idx=+this.dataset.delcol;if(schedule.cols.length<=1){toast('Нельзя удалить последний столбец');return;}schedule.cols.splice(idx,1);schedule.rows.forEach(function(r){r.splice(idx,1);});putSchedule();renderSchedule();};});
+    stbl.querySelectorAll('[data-delrow]').forEach(function(btn){btn.onclick=function(){var idx=+this.dataset.delrow;schedule.rows.splice(idx,1);putSchedule();renderSchedule();};});
+    stbl.addEventListener('blur',function(e){
+      if(e.target.classList.contains('sch-cell')){var ri2=+e.target.dataset.ri,ci2=+e.target.dataset.ci;if(schedule.rows[ri2]){schedule.rows[ri2][ci2]=e.target.textContent.trim();putSchedule();}}
+      if(e.target.classList.contains('sch-col-name')){var ci3=Array.prototype.indexOf.call(e.target.parentNode.parentNode.children,e.target.parentNode);if(ci3>=0&&ci3<schedule.cols.length){schedule.cols[ci3]=e.target.textContent.trim();putSchedule();}}
+    },true);
+  }
+  var sv=$('#sch-save-table');if(sv)sv.onclick=function(){putSchedule();toast('Таблица сохранена ✦');};
+  runReveals();
+}
 </script>
 </body>
 </html>
