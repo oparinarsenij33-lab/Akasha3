@@ -290,7 +290,7 @@ function findChapter(cid){var a=allLessons();for(var i=0;i<a.length;i++){if(a[i]
 function findChapterBySec(sid){var a=allLessons();for(var i=0;i<a.length;i++){if(a[i].s.id===sid)return a[i]}var y=tree.find(function(x){return(x.sections||[]).some(function(s){return s.id===sid})});if(!y)return null;var s=y.sections.find(function(x){return x.id===sid});return{y:y,s:s,c:null}}
 function lessonLabel(l){return l.n||'◆'}
 function seedProgress(rank){var idx=ri(rank);return allLessons().filter(function(o){return ri(o.s.rank)<=idx}).map(function(o){return o.l.id})}
-function normalizeRoster(){roster.forEach(function(m){m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
+function normalizeRoster(){roster.forEach(function(m){m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];if(!Array.isArray(m.readBooks))m.readBooks=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
 function findMember(n){return roster.find(function(m){return m.name.toLowerCase()===String(n).toLowerCase()})}
 function mastersList(){return roster.filter(function(m){return ri(m.rank)>=5&&m.status!=='Исключён'})}
 function logCouncil(t){councilLog.unshift({t:Date.now(),text:t});councilLog=councilLog.slice(0,40);putLog()}
@@ -305,13 +305,15 @@ function putTree(){FS&&M('tree').set({data:tree})}
 function putLibrary(){FS&&M('library').set({data:library})}
 function putSchedule(){FS&&M('schedule').set({data:schedule})}
 function putLog(){FS&&M('log').set({data:councilLog})}
-function putConfig(){FS&&M('config').set(config,{merge:true})}
+function putConfig(){if(!FS)return;var payload={};for(var k in config){if(k==='heraldData'||k==='heraldUrl')continue;payload[k]=config[k];}M('config').set(payload,{merge:true})}
 function putMember(m){FS&&db.collection('members').doc(mid(m.name)).set(m,{merge:true})}
 function readImageSmall(file,cb,max,q){max=max||420;q=q||.6;var r=new FileReader();r.onload=function(ev){var im=new Image();im.onload=function(){var w=im.width,h=im.height;if(w>max||h>max){var k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);cb(c.toDataURL('image/jpeg',q))};im.src=ev.target.result};r.readAsDataURL(file)}
 function readImage(file,cb){var r=new FileReader();r.onload=function(ev){var im=new Image();im.onload=function(){var max=640,w=im.width,h=im.height;if(w>max||h>max){var k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);var d;try{d=c.toDataURL('image/png')}catch(_){d=c.toDataURL('image/jpeg',.88)}cb(d)};im.src=ev.target.result};r.readAsDataURL(file)}
+function readHerald(file,cb){var r=new FileReader();r.onload=function(ev){var im=new Image();im.onload=function(){var max=384,w=im.width,h=im.height;if(w>max||h>max){var k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);cb(c.toDataURL('image/jpeg',.82))};im.src=ev.target.result};r.readAsDataURL(file)}
+function saveHerald(d){config.heraldData=d;config.heraldUrl=d;applyHerald(d);M('config').update({heraldData:d,heraldUrl:d}).catch(function(){M('config').set({heraldData:d,heraldUrl:d},{merge:true}).catch(function(){toast('Не удалось сохранить герб в базе')})})}
 function uploadMedia(file,cb){if(sto){var ref=sto.ref('media/'+uid('m')+'_'+(file.name||'f').replace(/[^\w.\-]+/g,'_'));ref.put(file).then(function(s){return s.ref.getDownloadURL()}).then(function(u){cb(u)}).catch(function(){readImageSmall(file,function(d){cb(d)},1200,.8)})}else{readImageSmall(file,function(d){cb(d)},1200,.8)}}
 function insertMediaToWriter(w,url,type){if(!w)return;var rich=w.querySelector('.rich');if(!rich)return;rich.focus();var tag;if((type||'').indexOf('image/')===0)tag='<img class="media" src="'+escAttr(url)+'" alt="">';else if((type||'').indexOf('video/')===0)tag='<video class="media" src="'+escAttr(url)+'" controls></video>';else if((type||'').indexOf('audio/')===0)tag='<audio class="media" src="'+escAttr(url)+'" controls></audio>';else tag='<a href="'+escAttr(url)+'" target="_blank" rel="noopener">📎 '+esc(url)+'</a>';document.execCommand('insertHTML',false,tag)}
-function restoreFounderKey(){try{config.codes=config.codes||{};config.codes['JEDI-2026']=true;M('config').update({'codes.JEDI-2026':true}).catch(function(){M('config').set({codes:{'JEDI-2026':true},heraldUrl:'',heraldData:'',libCats:null},{merge:true}).catch(function(){})})}catch(e){}}
+function restoreFounderKey(){try{config.codes=config.codes||{};config.codes['JEDI-2026']=true;M('config').set({codes:config.codes},{merge:true}).catch(function(){})}catch(e){}}
 function subscribeMeta(){
   unsubMeta.forEach(function(u){try{u()}catch(_){}});unsubMeta=[];
   unsubMeta.push(M('tree').onSnapshot(function(d){if(d.exists)tree=d.data().data||[];if(OPEN){buildTree();renderFeatured();renderProgress()}},function(){}));
@@ -321,10 +323,10 @@ function subscribeMeta(){
   unsubMeta.push(M('config').onSnapshot(function(d){if(d.exists){config=Object.assign({codes:{},heraldUrl:'',heraldData:'',libCats:null},d.data());applyHerald(config.heraldData||null);if(OPEN)renderLibrary()}},function(){}));
   unsubMeta.push(db.collection('members').onSnapshot(function(snap){roster=snap.docs.map(function(d){return d.data()});normalizeRoster();if(OPEN){renderOrder();renderProgress();renderAdmin();buildChannels();if($('#s-chats').classList.contains('active'))paintChat();if($('#s-profile').classList.contains('active'))renderProfile();renderHallHints()}},function(){}));
 }
-function seedIfEmpty(){M('tree').get().then(function(t){if(!t.exists){M('tree').set({data:[]});M('library').set({data:[]});M('schedule').set({data:{cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]}});M('log').set({data:[]});M('config').set({codes:{'JEDI-2026':true},heraldUrl:'',heraldData:'',libCats:null})}}).catch(function(e){console.warn('seed',e)})}
+function seedIfEmpty(){M('tree').get().then(function(t){if(!t.exists){M('tree').set({data:[]});M('library').set({data:[]});M('schedule').set({data:{cols:['Дата','Время','Учебный план / Тема','Что нужно','Учитель'],rows:[]}});M('log').set({data:[]});M('config').set({codes:{'JEDI-2026':true},libCats:null},{merge:true})}}).catch(function(e){console.warn('seed',e)})}
 function applyHerald(url){document.body.classList.toggle('has-herald',!!url);$$('.herald-img').forEach(function(im){if(im.id==='profile-ava-img')return;if(url)im.src=url;else im.removeAttribute('src')})}
 $$('.herald-trigger').forEach(function(t){t.addEventListener('click',function(){if(t.id==='profile-ava-wrap')return;var hi=$('#herald-input');if(hi)hi.click()})});
-var _hi=$('#herald-input');if(_hi)_hi.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;if(user&&!isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return}readImage(f,function(d){applyHerald(d);config.heraldData=d;putConfig();toast('Герб Ордена обновлён ✦')})});
+var _hi=$('#herald-input');if(_hi)_hi.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;if(user&&!isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return}readHerald(f,function(d){saveHerald(d);toast('Герб Ордена обновлён и сохранён ✦')})});
 var _mi=$('#media-input');if(_mi)_mi.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f)return;var w=activeWriter;if(!w){toast('Сначала открой редактор');return}toast('Загружаю медиа…');uploadMedia(f,function(u){insertMediaToWriter(w,u,f.type);toast('Медиа добавлено ✦')})});
 var _bi=$('#book-input');if(_bi)_bi.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f)return;readImageSmall(f,function(d){_bookCoverData=d;var pv=$('#bk-cover-pv');if(pv)pv.innerHTML='<img src="'+d+'" style="width:46px;height:64px;object-fit:cover;display:block">';toast('Обложка загружена ✦')},300,.7)});
 function finishEnter(m){
@@ -393,7 +395,7 @@ function lessonStatusMap(){if(!user)return{map:{},openCount:0,done:0,avail:0,fir
   var avail=allLessons().filter(function(o){return ri(o.s.rank)<=ri(user.rank)}).length;
   return{map:map,openCount:open+done,done:done,avail:avail,firstOpen:firstOpen,firstLocked:firstLocked}}
 function renderHallHints(){if(!user)return;var st=lessonStatusMap();var a=$('#hall-lesson-hint');if(a)a.textContent='Открыто '+st.openCount+' из '+st.avail+' уроков';var b=$('#hall-lib-hint');if(b)b.textContent=library.length+' трудов в хранилище';var c=$('#hall-sched-hint');if(c)c.textContent=(schedule.rows||[]).length+' занятий в расписании'}
-  function tvBack(){if(TV.level==='sections'){TV.level='years';TV.yid=null}else if(TV.level==='chapters'){TV.level='sections';TV.sid=null}else if(TV.level==='lessons'){TV.level='chapters';TV.cid=null}else if(TV.level==='lesson'){TV.level='lessons';TV.lid=null}buildTree()}
+function tvBack(){if(TV.level==='sections'){TV.level='years';TV.yid=null}else if(TV.level==='chapters'){TV.level='sections';TV.sid=null}else if(TV.level==='lessons'){TV.level='chapters';TV.cid=null}else if(TV.level==='lesson'){TV.level='lessons';TV.lid=null}buildTree()}
 function backBtn(){return '<div style="margin-bottom:14px"><button class="btn ghost small" id="tree-back">← Назад</button></div>'}
 function wireBack(){var b=document.getElementById('tree-back');if(b)b.onclick=tvBack}
 function buildTree(){
@@ -469,12 +471,23 @@ function rLessonPage(box,adm,can){
   adm.innerHTML='';
   var f=findLesson(TV.lid);if(!f){TV.level='lessons';buildTree();return}
   var l=f.l;
-  box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1>'+(can?'<div style="margin-bottom:14px"><button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button></div>':'')+'<div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
+  var me=user?findMember(user.name):null;
+  var done=!!(me&&me.progress&&me.progress.indexOf(l.id)>=0);
+  var markBtn=user?'<button class="btn small" id="ol-mark" style="margin:0 8px 0 0;'+(done?'background:linear-gradient(135deg,#4d6e5b,var(--green))':'')+'">'+(done?'✓ Прочитано':'Отметить прочитанным')+'</button>':'';
+  box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+(can?'<button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button>':'')+markBtn+'</div><div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
   wireBack();
   if(can&&$('#ol-edit'))$('#ol-edit').onclick=function(){editLesson(l.id,null)};
+  var mb=$('#ol-mark');if(mb)mb.onclick=function(){if(!me)return;me.progress=me.progress||[];var i=me.progress.indexOf(l.id);if(i>=0)me.progress.splice(i,1);else me.progress.push(l.id);putMember(me);toast(i>=0?'Отметка снята':'Урок отмечен прочитанным ✦');buildTree()};
 }
 function refreshAfterTree(){putTree();buildTree();renderFeatured();renderProgress()}
-function addYear(){openModal('<button class="x" data-x>×</button><h2>Новый учебный год</h2><div class="field"><label>Год</label><input id="ny-year" type="number" value="'+new Date().getFullYear()+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ny-ok">Создать</button></div>');
+function renderFeatured(){
+  var f=$('#featured');if(!f)return;var st=lessonStatusMap(),pct=st.avail?Math.round(st.done/st.avail*100):0;
+  if(st.firstOpen){var o=findLesson(st.firstOpen),l=o.l;f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твоё обучение</p><h3>Урок '+lessonLabel(l)+' — '+esc(l.title)+'</h3><div class="progress"><i data-w="'+pct+'"></i></div><div class="f-row"><span>Пройдено '+st.done+' из '+st.avail+' ('+pct+'%)</span><button class="btn small" id="feat-go">Открыть</button></div>';setTimeout(function(){var b=f.querySelector('.progress i');if(b)b.style.width=pct+'%'},120);f.querySelector('#feat-go').onclick=function(){TV={level:'lesson',yid:o.y.id,sid:o.s.id,cid:o.c.id,lid:l.id};goto('lessons')}}
+  else if(st.firstLocked){var o2=findLesson(st.firstLocked),l2=o2.l;f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твой следующий шаг</p><h3>Урок '+lessonLabel(l2)+' — '+esc(l2.title)+'</h3><div class="f-lock"><svg><use href="#i-lock"/></svg><span>Откроется в разделе ранга '+esc(o2.s.rank)+'</span></div>'}
+  else{f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Путь пройден</p><h3>Все доступные уроки сданы.</h3>'}
+  applyHerald(config.heraldData||null);
+}
+  function addYear(){openModal('<button class="x" data-x>×</button><h2>Новый учебный год</h2><div class="field"><label>Год</label><input id="ny-year" type="number" value="'+new Date().getFullYear()+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ny-ok">Создать</button></div>');
   $('#ny-ok').onclick=function(){var y=parseInt($('#ny-year').value,10)||new Date().getFullYear();tree.push({id:uid('Y'),year:y,sections:[]});logCouncil('<b>'+esc(user.name)+'</b> добавил(а) учебный год '+y);closeModal();TV={level:'sections',yid:tree[tree.length-1].id,sid:null,cid:null,lid:null};refreshAfterTree()}}
 function renameYear(id){var o=tree.find(function(y){return y.id===id});openModal('<button class="x" data-x>×</button><h2>Переименовать год</h2><div class="field"><label>Год</label><input id="ry-year" type="number" value="'+(o?o.year:new Date().getFullYear())+'"></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ry-ok">Сохранить</button></div>');
   $('#ry-ok').onclick=function(){var y=parseInt($('#ry-year').value,10);if(!y)return;if(o)o.year=y;closeModal();refreshAfterTree()}}
@@ -501,13 +514,6 @@ function editLesson(id,cid){
 }
 function delLesson(id){var f=findLesson(id);if(!f)return;confirmModal('Удалить урок «'+f.l.title+'»?',function(){f.c.lessons=f.c.lessons.filter(function(x){return x.id!==id});logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');refreshAfterTree()})}
 function openLesson(id){TV.level='lesson';TV.lid=id;buildTree()}
-function renderFeatured(){
-  var f=$('#featured');if(!f)return;var st=lessonStatusMap(),pct=st.avail?Math.round(st.done/st.avail*100):0;
-  if(st.firstOpen){var o=findLesson(st.firstOpen),l=o.l;f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твоё обучение</p><h3>Урок '+lessonLabel(l)+' — '+esc(l.title)+'</h3><div class="progress"><i data-w="'+pct+'"></i></div><div class="f-row"><span>Пройдено '+st.done+' из '+st.avail+' ('+pct+'%)</span><button class="btn small" id="feat-go">Открыть</button></div>';setTimeout(function(){var b=f.querySelector('.progress i');if(b)b.style.width=pct+'%'},120);f.querySelector('#feat-go').onclick=function(){TV={level:'lesson',yid:o.y.id,sid:o.s.id,cid:o.c.id,lid:l.id};goto('lessons')}}
-  else if(st.firstLocked){var o2=findLesson(st.firstLocked),l2=o2.l;f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Твой следующий шаг</p><h3>Урок '+lessonLabel(l2)+' — '+esc(l2.title)+'</h3><div class="f-lock"><svg><use href="#i-lock"/></svg><span>Откроется в разделе ранга '+esc(o2.s.rank)+'</span></div>'}
-  else{f.innerHTML='<div class="wm"><img class="herald-img" alt=""></div><p class="kicker">Путь пройден</p><h3>Все доступные уроки сданы.</h3>'}
-  applyHerald(config.heraldData||null);
-}
 function ensureLibCats(){if(!Array.isArray(config.libCats)||!config.libCats.length){config.libCats=[{id:'hist',label:'История'},{id:'fight',label:'Боевое искусство'},{id:'phil',label:'Философия'}];putConfig()}}
 function renderLibrary(){
   ensureLibCats();var can=isMaster(user);
@@ -518,17 +524,25 @@ function renderLibrary(){
   $('#lib-chips').innerHTML=cats.map(function(c){var del=(can&&c[0]!=='all')?' <button class="iconbtn dng" data-delcat="'+c[0]+'" style="width:20px;height:20px;vertical-align:-2px" title="Удалить раздел"><svg style="width:12px;height:12px"><use href="#i-trash"/></svg></button>':'';return '<button class="chip '+(libFilter===c[0]?'on':'')+'" data-f="'+c[0]+'">'+esc(c[1])+del+'</button>'}).join('');
   $$('#lib-chips .chip').forEach(function(b){b.onclick=function(e){if(e.target.closest('[data-delcat]'))return;libFilter=b.dataset.f;renderLibrary()}});
   $$('#lib-chips [data-delcat]').forEach(function(b){b.onclick=function(e){e.stopPropagation();confirmModal('Удалить раздел? (книги останутся)',function(){config.libCats=config.libCats.filter(function(c){return c.id!==b.dataset.delcat});if(libFilter===b.dataset.delcat)libFilter='all';putConfig();renderLibrary()})}});
+  var me=user?findMember(user.name):null; var rb=(me&&me.readBooks)||[];
   var shown=library.filter(function(b){return libFilter==='all'||b.cat===libFilter});
   $('#lib-list').innerHTML=shown.length?shown.map(function(b){
     var open=b.url?'<a class="dl" href="'+escAttr(b.url)+'" target="_blank" rel="noopener">Открыть</a>':'<span class="dl">Нет ссылки</span>';
     var tools=can?'<button class="iconbtn" data-editb="'+b.id+'" title="Править"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delb="'+b.id+'"><svg><use href="#i-trash"/></svg></button>':'';
     var cover=b.cover?'<div class="cover" style="padding:0;overflow:hidden"><img src="'+escAttr(b.cover)+'" style="width:100%;height:100%;object-fit:cover;display:block"></div>':'<div class="cover">'+esc(b.letter||b.title[0]||'?')+'</div>';
     var ann=b.ann?'<div class="b-ann" id="ann-'+b.id+'" style="display:none">'+esc(b.ann)+'</div><button class="b-ann-toggle" data-ann="'+b.id+'">Читать аннотацию ▾</button>':'';
-    return '<div class="book rv">'+cover+'<div class="b-info"><h4>'+esc(b.title)+'</h4><p>'+esc(b.author||'')+' · '+esc(b.size||'')+'</p>'+ann+'</div>'+tools+open+'</div>';
+    var rdone=rb.indexOf(b.id)>=0;
+    var readBtn=user?'<button class="btn ghost small" data-readb="'+b.id+'" style="margin:0;padding:8px 12px;white-space:nowrap;'+(rdone?'background:linear-gradient(135deg,#4d6e5b,var(--green));border-color:var(--green);color:#fff':'')+'">'+(rdone?'✓ Прочитано':'Прочитано')+'</button>':'';
+    return '<div class="book rv">'+cover+'<div class="b-info"><h4>'+esc(b.title)+'</h4><p>'+esc(b.author||'')+' · '+esc(b.size||'')+'</p>'+ann+'</div>'+readBtn+tools+open+'</div>';
   }).join(''):'<p class="empty-note">Пусто.</p>';
   $$('#lib-list [data-delb]').forEach(function(b){b.onclick=function(){confirmModal('Удалить труд?',function(){library=library.filter(function(x){return x.id!==b.dataset.delb});putLibrary();renderLibrary()})}});
   $$('#lib-list [data-editb]').forEach(function(b){b.onclick=function(){addBook(b.dataset.editb)}});
   $$('#lib-list [data-ann]').forEach(function(b){b.onclick=function(){var a=$('#ann-'+b.dataset.ann);if(!a)return;var open=a.style.display==='none';a.style.display=open?'block':'none';b.textContent=open?'Скрыть аннотацию ▴':'Читать аннотацию ▾'}});
+  $$('#lib-list [data-readb]').forEach(function(b){b.onclick=function(){
+    if(!me)return; me.readBooks=me.readBooks||[]; var id=b.dataset.readb; var i=me.readBooks.indexOf(id);
+    if(i>=0)me.readBooks.splice(i,1); else me.readBooks.push(id);
+    putMember(me); toast(i>=0?'Отметка снята':'Книга отмечена прочитанной ✦'); renderLibrary();
+  }});
   runReveals();
 }
 function addBook(editId){
@@ -707,14 +721,16 @@ function renderProgress(){
   var box=$('#progress-list');if(!box)return;var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
   box.innerHTML=sorted.map(function(m){var idx=ri(m.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(m.progress||[]).indexOf(o.l.id)>=0}).length;var pct=avail.length?Math.round(passed/avail.length*100):0;var o=onlineInfo(m.name);var canEdit=isMaster(user);
     var marks=allLessons().map(function(x){var lock=ri(x.s.rank)>idx;var pass=(m.progress||[]).indexOf(x.l.id)>=0;return '<span class="lmark '+(lock?'lock':(pass?'pass':''))+'">'+lessonLabel(x.l)+' '+(lock?'🔒':(pass?'✓':'·'))+'</span>'}).join('');
-    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div class="lessons">'+marks+'</div></div>'}).join('')||'<p class="empty-note">Нет учеников.</p>';
+    var rb=m.readBooks||[]; var rbc=library.filter(function(bk){return rb.indexOf(bk.id)>=0}).length;
+    var bookBlock=library.length?'<div style="margin-top:12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">Книги · прочитано '+rbc+' из '+library.length+'</div><div class="lessons" style="margin-top:4px">'+library.map(function(bk){var rp=rb.indexOf(bk.id)>=0;return '<span class="lmark '+(rp?'pass':'')+'">'+(rp?'✓ ':'· ')+esc(bk.title)+'</span>'}).join('')+'</div>':'';
+    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · уроков сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div class="lessons">'+marks+'</div>'+bookBlock+'</div>'}).join('')||'<p class="empty-note">Нет учеников.</p>';
   $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
 }
 function editProgress(name){
   var m=findMember(name);if(!m)return;
   var checks=allLessons().map(function(o){var done=(m.progress||[]).indexOf(o.l.id)>=0;return '<label><input type="checkbox" data-lid="'+o.l.id+'" '+(done?'checked':'')+'> '+esc(String(o.y.year))+' · '+esc(o.s.title)+' · '+esc(o.c.title)+' · '+lessonLabel(o.l)+' — '+esc(o.l.title)+'</label>'}).join('');
   openModal('<button class="x" data-x>×</button><p class="kicker">Решение Совета</p><h2 style="margin-top:6px">'+esc(name)+'</h2><div class="field sel"><label>Ранг</label><select id="ep-rank">'+RANKS.map(function(r){return '<option value="'+r+'" '+(r===m.rank?'selected':'')+'>'+r+'</option>'}).join('')+'</select></div><div class="field"><label>Статус (впиши от руки)</label><input id="ep-status" type="text" value="'+escAttr(m.status||'Ученик')+'" placeholder="Напр.: Ученик, Рыцарь, На испытании"></div><div class="field"><label>Звание / титул</label><input id="ep-title" type="text" value="'+escAttr(m.title||'')+'"></div><div class="field sel"><label>Учитель</label><select id="ep-teacher"><option value="">— нет —</option>'+mastersList().filter(function(x){return x.name!==name}).map(function(x){return '<option '+(x.name===m.teacher?'selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></div><label class="remember" style="margin-top:14px"><input type="checkbox" id="ep-council" '+(m.inCouncil?'checked':'')+'><span class="box"><svg><use href="#i-check"/></svg></span>Член Совета Мастеров</label><label class="remember" style="margin-top:10px"><input type="checkbox" id="ep-entered" '+(m.enteredOnce?'checked':'')+'><span class="box"><svg><use href="#i-check"/></svg></span>Входил в Архив (сними у тех, кто ещё не заходил)</label><div class="field"><label>Сданные уроки</label><div class="checks" id="ep-checks">'+checks+'</div></div><button class="btn" id="ep-save">Сохранить решение</button>');
-  $('#ep-save').onclick=function(){m.rank=$('#ep-rank').value;m.status=($('#ep-status').value||'').trim()||'Ученик';m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher').value;m.inCouncil=$('#ep-council').checked;m.enteredOnce=$('#ep-entered').checked;m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid});putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»: '+m.rank+' / '+m.status);closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels();buildTree()}toast('Решение сохранено ✦')};
+  $('#ep-save').onclick=function(){m.rank=$('#ep-rank').value;m.status=($('#ep-status').value||'').trim()||'Ученик';m.title=$('#ep-title').value.trim();m.teacher=$('#ep-teacher').value;m.inCouncil=$('#ep-council').checked;m.enteredOnce=$('#ep-entered').checked;m.readBooks=m.readBooks||[];m.progress=$$('#ep-checks [data-lid]:checked').map(function(cb){return cb.dataset.lid});putMember(m);logCouncil('<b>'+esc(user.name)+'</b> обновил(а) «'+esc(name)+'»: '+m.rank+' / '+m.status);closeModal();if(name===user.name){user.rank=m.rank;openApp()}else{renderProgress();renderOrder();renderAdmin();buildChannels();buildTree()}toast('Решение сохранено ✦')};
 }
 function renderAdmin(){
   var box=$('#admin-roster');if(!box)return;
@@ -746,7 +762,7 @@ var _amb=$('#add-member-btn');if(_amb)_amb.onclick=function(){
     var code=$('#nm-code').value.trim();if(!code){toast('Задай код');return}
     if(config.codes&&config.codes[code]){toast('Код занят. Придумай другой.');return}
     var rank=$('#nm-rank').value;
-    var m={name:n,rank:rank,status:($('#nm-status').value||'').trim()||'Ученик',title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),bio:'',avatarUrl:null,lastSeen:0,enteredOnce:false};
+    var m={name:n,rank:rank,status:($('#nm-status').value||'').trim()||'Ученик',title:$('#nm-title').value.trim(),inCouncil:ri(rank)>=7,teacher:'',progress:seedProgress(rank),readBooks:[],bio:'',avatarUrl:null,lastSeen:0,enteredOnce:false};
     putMember(m);config.codes=config.codes||{};config.codes[code]={name:n};putConfig();
     logCouncil('<b>'+esc(user.name)+'</b> принял(а) «'+esc(n)+'» · '+rank+' · код «'+esc(code)+'»');
     closeModal();renderAdmin();renderOrder();renderProgress();buildChannels();
@@ -782,10 +798,19 @@ function renderProfile(){
   var bm=$('#bio-mount');
   bm.innerHTML='<div id="bio-view" class="bio">'+(me.bio||'<p>Биография пуста.</p>')+'</div><div id="bio-edit" style="display:none;margin-top:10px"></div><div style="margin-top:10px"><button class="btn ghost small" id="bio-toggle">Редактировать биографию</button></div>';
   $('#bio-toggle').onclick=function(){var edit=$('#bio-edit'),view=$('#bio-view');if(edit.style.display==='none'){edit.style.display='block';view.style.display='none';var w=mountWriter(edit,'Расскажи о своём пути…',{});setWriterHTML(w,me.bio||'');$('#bio-toggle').textContent='Скрыть редактор'}else{edit.style.display='none';view.style.display='block';$('#bio-toggle').textContent='Редактировать биографию'}};
+  var sp=$('#save-profile');
+  if(sp&&isCouncil(user)&&!$('#change-herald')){var hb=document.createElement('button');hb.className='btn ghost';hb.id='change-herald';hb.textContent='Сменить Герб Ордена';hb.onclick=function(){$('#herald-input').click()};sp.parentNode.insertBefore(hb,sp)}
+  var exh=$('#change-herald');if(exh&&!isCouncil(user))exh.remove();
 }
 var _paw=$('#profile-ava-wrap');if(_paw)_paw.addEventListener('click',function(){var ai=$('#avatar-input');if(ai)ai.click()});
 var _ai=$('#avatar-input');if(_ai)_ai.addEventListener('change',function(e){var f=e.target.files[0];e.target.value='';if(!f||!f.type.startsWith('image/'))return;readImageSmall(f,function(d){var me=findMember(user.name);if(!me)return;me.avatarUrl=d;putMember({name:user.name,avatarUrl:d});renderProfile();renderOrder();toast('Аватар обновлён ✦')},220,.6)});
-var _sp=$('#save-profile');if(_sp)_sp.onclick=function(){var me=findMember(user.name);if(!me)return;var edit=$('#bio-edit');if(edit&&edit.style.display!=='none')me.bio=getWriterHTML(edit.querySelector('.writer'));var t=$('#pf-teacher');if(t)me.teacher=t.value;putMember(me);renderProfile();renderProgress();renderOrder();toast('Профиль сохранён ✦')};
+var _sp=$('#save-profile');if(_sp)_sp.onclick=function(){
+  var me=findMember(user.name);if(!me)return;
+  var w=$('#bio-edit .writer');
+  if(w){me.bio=getWriterHTML(w)}
+  var t=$('#pf-teacher');if(t)me.teacher=t.value;
+  putMember(me);renderProfile();renderProgress();renderOrder();toast('Профиль сохранён ✦');
+};
 function doLogout(){presenceTick();var me=findMember(user.name);if(me){me.lastSeen=Date.now()-999999;putMember({name:user.name,lastSeen:me.lastSeen})}localStorage.removeItem('archive_user');location.reload()}
 ['#logout','#hdr-logout'].forEach(function(s){var el=$(s);if(el)el.onclick=doLogout});
 var fsZoom=parseFloat(localStorage.getItem('archive_zoom')||'1');if(isNaN(fsZoom))fsZoom=1;
@@ -813,153 +838,6 @@ restoreFounderKey();
 (function autoEnter(){var saved=LS('archive_user',null);if(saved&&saved.name){user={name:saved.name,rank:saved.rank||'Падаван'};var g=$('#gate');if(g){g.classList.remove('active');g.style.display='none'}openApp();window.scrollTo(0,0);setTimeout(function(){window.scrollTo(0,0)},60)}})();
 if(FS){M('config').get().then(function(d){if(d.exists){var c=d.data()||{};if(c.heraldData)applyHerald(c.heraldData)}}).catch(function(){})}
 setInterval(function(){if(!OPEN)return;if($('#s-order').classList.contains('active'))renderOrder();if($('#s-progress').classList.contains('active'))renderProgress()},15000);
-</script>
-  <script>
-<script>
-/* ===== НАДСТРОЙКА v4: «Прочитано» (уроки+книги) + рабочий Герб + фикс Биографии ===== */
-/* Отдельный скрипт в конце: переопределяет нужные функции, вход и базу не ломает. */
-
-/* --- 1) putConfig больше НЕ трогает герб (герб живёт отдельно через saveHerald) --- */
-function putConfig(){
-  if(!FS) return;
-  var payload={};
-  for(var k in config){ if(k==='heraldData'||k==='heraldUrl') continue; payload[k]=config[k]; }
-  M('config').set(payload,{merge:true});
-}
-
-/* --- 2) Герб: лёгкое сжатие (JPEG, точно < 1 МБ) + надёжное сохранение --- */
-function readHerald(file,cb){
-  var r=new FileReader();
-  r.onload=function(ev){
-    var im=new Image();
-    im.onload=function(){
-      var max=384,w=im.width,h=im.height;
-      if(w>max||h>max){var k=max/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
-      var c=document.createElement('canvas');c.width=w;c.height=h;
-      c.getContext('2d').drawImage(im,0,0,w,h);
-      cb(c.toDataURL('image/jpeg',.82));
-    };
-    im.src=ev.target.result;
-  };
-  r.readAsDataURL(file);
-}
-function saveHerald(d){
-  config.heraldData=d; config.heraldUrl=d; applyHerald(d);
-  M('config').update({heraldData:d,heraldUrl:d}).catch(function(){
-    M('config').set({heraldData:d,heraldUrl:d},{merge:true}).catch(function(){ toast('Не удалось сохранить герб в базе'); });
-  });
-}
-/* заменяем поле загрузки герба чистым клоном (старый кривой обработчик исчезает) */
-(function(){
-  var old=document.getElementById('herald-input');
-  if(old){
-    var neu=old.cloneNode(false);
-    old.parentNode.replaceChild(neu,old);
-    neu.addEventListener('change',function(e){
-      var f=e.target.files[0]; e.target.value='';
-      if(!f||!f.type.startsWith('image/'))return;
-      if(user && !isCouncil(user)){toast('Только члены Совета могут изменять Герб Ордена.');return;}
-      readHerald(f,function(d){ saveHerald(d); toast('Герб Ордена обновлён и сохранён ✦'); });
-    });
-  }
-})();
-
-/* --- 3) нормализация: у каждого члена есть readBooks --- */
-function normalizeRoster(){roster.forEach(function(m){m.title=m.title||'';if(m.inCouncil===undefined)m.inCouncil=ri(m.rank)>=7;m.teacher=m.teacher||'';m.bio=m.bio||'';m.avatarUrl=m.avatarUrl||null;if(!Array.isArray(m.progress))m.progress=[];if(!Array.isArray(m.readBooks))m.readBooks=[];m.lastSeen=m.lastSeen||0;m.status=m.status||'Ученик'})}
-
-/* --- 4) страница урока: кнопка «Прочитано» (самоотметка) --- */
-function rLessonPage(box,adm,can){
-  adm.innerHTML='';
-  var f=findLesson(TV.lid);if(!f){TV.level='lessons';buildTree();return}
-  var l=f.l;
-  var me=user?findMember(user.name):null;
-  var done=!!(me&&me.progress&&me.progress.indexOf(l.id)>=0);
-  var markBtn=user?'<button class="btn small" id="ol-mark" style="margin:0 8px 0 0;'+(done?'background:linear-gradient(135deg,#4d6e5b,var(--green))':'')+'">'+(done?'✓ Прочитано':'Отметить прочитанным')+'</button>':'';
-  box.innerHTML=backBtn()+'<p class="kicker">Урок '+lessonLabel(l)+' · '+esc(l.meta||'')+'</p><h1 style="font-family:Forum;font-size:28px;margin:6px 0 14px">'+esc(l.title)+'</h1><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+(can?'<button class="btn ghost small" id="ol-edit">✎ Редактировать урок</button>':'')+markBtn+'</div><div class="orn"><i></i></div><div class="bio" style="margin-top:0">'+(l.body||'<p style="color:var(--ink-2)">Тело урока пока пусто.</p>')+'</div>';
-  wireBack();
-  if(can&&$('#ol-edit'))$('#ol-edit').onclick=function(){editLesson(l.id,null)};
-  var mb=$('#ol-mark');if(mb)mb.onclick=function(){
-    if(!me)return; me.progress=me.progress||[]; var i=me.progress.indexOf(l.id);
-    if(i>=0)me.progress.splice(i,1); else me.progress.push(l.id);
-    putMember(me); toast(i>=0?'Отметка снята':'Урок отмечен прочитанным ✦'); buildTree();
-  };
-}
-
-/* --- 5) библиотека: кнопка «Прочитано» у каждой книги --- */
-function renderLibrary(){
-  ensureLibCats();var can=isMaster(user);
-  $('#lib-admin').innerHTML=can?'<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд</button> <button class="btn ghost small" id="add-cat"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить раздел</button>':'';
-  if(can&&$('#add-book'))$('#add-book').onclick=function(){addBook(null)};
-  if(can&&$('#add-cat'))$('#add-cat').onclick=function(){var v=prompt('Название нового раздела библиотеки:');if(!v||!v.trim())return;config.libCats.push({id:uid('cat'),label:v.trim()});putConfig();renderLibrary();toast('Раздел добавлен ✦')};
-  var cats=[['all','Все']].concat((config.libCats||[]).map(function(c){return[c.id,c.label]}));
-  $('#lib-chips').innerHTML=cats.map(function(c){var del=(can&&c[0]!=='all')?' <button class="iconbtn dng" data-delcat="'+c[0]+'" style="width:20px;height:20px;vertical-align:-2px" title="Удалить раздел"><svg style="width:12px;height:12px"><use href="#i-trash"/></svg></button>':'';return '<button class="chip '+(libFilter===c[0]?'on':'')+'" data-f="'+c[0]+'">'+esc(c[1])+del+'</button>'}).join('');
-  $$('#lib-chips .chip').forEach(function(b){b.onclick=function(e){if(e.target.closest('[data-delcat]'))return;libFilter=b.dataset.f;renderLibrary()}});
-  $$('#lib-chips [data-delcat]').forEach(function(b){b.onclick=function(e){e.stopPropagation();confirmModal('Удалить раздел? (книги останутся)',function(){config.libCats=config.libCats.filter(function(c){return c.id!==b.dataset.delcat});if(libFilter===b.dataset.delcat)libFilter='all';putConfig();renderLibrary()})}});
-  var me=user?findMember(user.name):null; var rb=(me&&me.readBooks)||[];
-  var shown=library.filter(function(b){return libFilter==='all'||b.cat===libFilter});
-  $('#lib-list').innerHTML=shown.length?shown.map(function(b){
-    var open=b.url?'<a class="dl" href="'+escAttr(b.url)+'" target="_blank" rel="noopener">Открыть</a>':'<span class="dl">Нет ссылки</span>';
-    var tools=can?'<button class="iconbtn" data-editb="'+b.id+'" title="Править"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delb="'+b.id+'"><svg><use href="#i-trash"/></svg></button>':'';
-    var cover=b.cover?'<div class="cover" style="padding:0;overflow:hidden"><img src="'+escAttr(b.cover)+'" style="width:100%;height:100%;object-fit:cover;display:block"></div>':'<div class="cover">'+esc(b.letter||b.title[0]||'?')+'</div>';
-    var ann=b.ann?'<div class="b-ann" id="ann-'+b.id+'" style="display:none">'+esc(b.ann)+'</div><button class="b-ann-toggle" data-ann="'+b.id+'">Читать аннотацию ▾</button>':'';
-    var rdone=rb.indexOf(b.id)>=0;
-    var readBtn=user?'<button class="btn ghost small" data-readb="'+b.id+'" style="margin:0;padding:8px 12px;white-space:nowrap;'+(rdone?'background:linear-gradient(135deg,#4d6e5b,var(--green));border-color:var(--green);color:#fff':'')+'">'+(rdone?'✓ Прочитано':'Прочитано')+'</button>':'';
-    return '<div class="book rv">'+cover+'<div class="b-info"><h4>'+esc(b.title)+'</h4><p>'+esc(b.author||'')+' · '+esc(b.size||'')+'</p>'+ann+'</div>'+readBtn+tools+open+'</div>';
-  }).join(''):'<p class="empty-note">Пусто.</p>';
-  $$('#lib-list [data-delb]').forEach(function(b){b.onclick=function(){confirmModal('Удалить труд?',function(){library=library.filter(function(x){return x.id!==b.dataset.delb});putLibrary();renderLibrary()})}});
-  $$('#lib-list [data-editb]').forEach(function(b){b.onclick=function(){addBook(b.dataset.editb)}});
-  $$('#lib-list [data-ann]').forEach(function(b){b.onclick=function(){var a=$('#ann-'+b.dataset.ann);if(!a)return;var open=a.style.display==='none';a.style.display=open?'block':'none';b.textContent=open?'Скрыть аннотацию ▴':'Читать аннотацию ▾'}});
-  $$('#lib-list [data-readb]').forEach(function(b){b.onclick=function(){
-    if(!me)return; me.readBooks=me.readBooks||[]; var id=b.dataset.readb; var i=me.readBooks.indexOf(id);
-    if(i>=0)me.readBooks.splice(i,1); else me.readBooks.push(id);
-    putMember(me); toast(i>=0?'Отметка снята':'Книга отмечена прочитанной ✦'); renderLibrary();
-  }});
-  runReveals();
-}
-
-/* --- 6) таблица успеваемости: уроки + книги --- */
-function renderProgress(){
-  var box=$('#progress-list');if(!box)return;var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
-  box.innerHTML=sorted.map(function(m){var idx=ri(m.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(m.progress||[]).indexOf(o.l.id)>=0}).length;var pct=avail.length?Math.round(passed/avail.length*100):0;var o=onlineInfo(m.name);var canEdit=isMaster(user);
-    var marks=allLessons().map(function(x){var lock=ri(x.s.rank)>idx;var pass=(m.progress||[]).indexOf(x.l.id)>=0;return '<span class="lmark '+(lock?'lock':(pass?'pass':''))+'">'+lessonLabel(x.l)+' '+(lock?'🔒':(pass?'✓':'·'))+'</span>'}).join('');
-    var rb=m.readBooks||[]; var rbc=library.filter(function(bk){return rb.indexOf(bk.id)>=0}).length;
-    var bookBlock=library.length?'<div style="margin-top:12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">Книги · прочитано '+rbc+' из '+library.length+'</div><div class="lessons" style="margin-top:4px">'+library.map(function(bk){var rp=rb.indexOf(bk.id)>=0;return '<span class="lmark '+(rp?'pass':'')+'">'+(rp?'✓ ':'· ')+esc(bk.title)+'</span>'}).join('')+'</div>':'';
-    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · уроков сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div class="lessons">'+marks+'</div>'+bookBlock+'</div>'}).join('')||'<p class="empty-note">Нет учеников.</p>';
-  $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
-}
-
-/* --- 7) профиль: кнопка «Сменить Герб Ордена» у Совета --- */
-function renderProfile(){
-  var me=findMember(user.name);if(!me)return;
-  var idx=ri(user.rank);var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});var passed=avail.filter(function(o){return(me.progress||[]).indexOf(o.l.id)>=0}).length;
-  $('#st-passed').textContent=passed;$('#st-left').textContent=Math.max(0,avail.length-passed);
-  $('#p-title').textContent=me.title?('«'+me.title+'»'):'';
-  var img=$('#profile-ava-img'),ph=$('#profile-ava-ph');
-  if(me.avatarUrl){img.src=me.avatarUrl;img.style.display='block';ph.style.display='none'}else{img.style.display='none';ph.style.display='grid'}
-  var tm=$('#teacher-mount');
-  if(isStudent(user)){tm.innerHTML='<div class="field sel"><label>Мой Учитель</label><select id="pf-teacher"><option value="">— пока нет —</option>'+mastersList().map(function(x){return '<option '+(x.name===me.teacher?'selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></div>'}
-  else{tm.innerHTML=''}
-  $('#p-teacher-line').style.display=me.teacher?'block':'none';$('#p-teacher-line').textContent=me.teacher?('Наставник: '+me.teacher):'';
-  var bm=$('#bio-mount');
-  bm.innerHTML='<div id="bio-view" class="bio">'+(me.bio||'<p>Биография пуста.</p>')+'</div><div id="bio-edit" style="display:none;margin-top:10px"></div><div style="margin-top:10px"><button class="btn ghost small" id="bio-toggle">Редактировать биографию</button></div>';
-  $('#bio-toggle').onclick=function(){var edit=$('#bio-edit'),view=$('#bio-view');if(edit.style.display==='none'){edit.style.display='block';view.style.display='none';var w=mountWriter(edit,'Расскажи о своём пути…',{});setWriterHTML(w,me.bio||'');$('#bio-toggle').textContent='Скрыть редактор'}else{edit.style.display='none';view.style.display='block';$('#bio-toggle').textContent='Редактировать биографию'}};
-  var sp=$('#save-profile');
-  if(sp&&isCouncil(user)&&!$('#change-herald')){var hb=document.createElement('button');hb.className='btn ghost';hb.id='change-herald';hb.textContent='Сменить Герб Ордена';hb.onclick=function(){$('#herald-input').click()};sp.parentNode.insertBefore(hb,sp)}
-  var exh=$('#change-herald');if(exh&&!isCouncil(user))exh.remove();
-}
-
-/* --- 8) сохранение профиля: биография больше не сбрасывается --- */
-var _sp2=$('#save-profile');
-if(_sp2)_sp2.onclick=function(){
-  var me=findMember(user.name);if(!me)return;
-  var w=$('#bio-edit .writer');
-  if(w){ me.bio=getWriterHTML(w); }
-  var t=$('#pf-teacher'); if(t)me.teacher=t.value;
-  putMember(me); renderProfile(); renderProgress(); renderOrder(); toast('Профиль сохранён ✦');
-};
-
-/* --- оживить после подгрузки --- */
-if(typeof OPEN!=='undefined'&&OPEN){ try{ renderProfile(); renderProgress(); renderLibrary(); }catch(e){ console.warn('addon v4',e); } }
 </script>
 </body>
 </html>
