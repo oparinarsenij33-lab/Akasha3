@@ -1077,5 +1077,58 @@ function renderLibrary(){
   runReveals();
 }
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: чиним форматирование текста (выделение + отмена) ===== */
+function mountWriter(mount,ph,opts){
+  opts=opts||{};
+  mount.innerHTML='<div class="writer"><div class="wbar">'+
+    '<button class="fmt b" type="button" data-c="bold">Ж</button>'+
+    '<button class="fmt i" type="button" data-c="italic">К</button>'+
+    '<button class="fmt u" type="button" data-c="underline">П</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-b="H1">H1</button>'+
+    '<button class="fmt" type="button" data-b="H2">H2</button>'+
+    '<button class="fmt" type="button" data-b="H3">H3</button>'+
+    '<button class="fmt" type="button" data-b="P" title="Обычный текст">¶</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-a="justifyLeft" title="По левому краю">⬅</button>'+
+    '<button class="fmt" type="button" data-a="justifyCenter" title="По центру">⬌</button>'+
+    '<button class="fmt" type="button" data-a="justifyRight" title="По правому краю">➡</button>'+
+    '<button class="fmt" type="button" data-a="justifyFull" title="По ширине">☰</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-b="BLOCKQUOTE">❝</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="clip" type="button" data-clip title="Фото / видео / аудио"><svg><use href="#i-link"/></svg></button>'+
+    '<button class="clip" type="button" data-link title="Ссылка"><svg><use href="#i-link"/></svg></button>'+
+    '<button class="kb-toggle" type="button" data-kb title="Гравировка (клавиатура)">⌨</button>'+
+    '<button class="fmt fs-x" type="button" data-fs title="Во весь экран">⛶</button>'+
+    '</div><div class="rich" contenteditable="true" data-ph="'+ph+'"></div><textarea class="plain" inputmode="none"></textarea></div>'+
+    (opts.withSend?'<div class="send-row"><button class="btn" id="chat-send">Отправить</button></div>':'');
+  var w=mount.querySelector('.writer');var rich=w.querySelector('.rich');var plain=w.querySelector('.plain');
+  var savedRange=null;
+  function saveSel(){try{var sel=window.getSelection();if(sel.rangeCount>0){var r=sel.getRangeAt(0);if(rich.contains(r.commonAncestorContainer))savedRange=r.cloneRange();}}catch(_){}}
+  function restoreSel(){rich.focus();try{if(savedRange){var sel=window.getSelection();sel.removeAllRanges();sel.addRange(savedRange);}}catch(_){}}
+  rich.addEventListener('mouseup',saveSel);
+  rich.addEventListener('keyup',saveSel);
+  rich.addEventListener('touchend',saveSel);
+  rich.addEventListener('blur',saveSel);
+  function curBlock(){
+    var sel=window.getSelection();var node=sel.anchorNode;
+    while(node&&node!==rich){
+      if(node.nodeType===1){var tn=node.tagName.toUpperCase();if(tn==='H1'||tn==='H2'||tn==='H3'||tn==='BLOCKQUOTE'||tn==='P'||tn==='DIV'){return tn;}}
+      node=node.parentNode;
+    }
+    return '';
+  }
+  w.querySelectorAll('.fmt[data-c]').forEach(function(b){b.onclick=function(e){e.preventDefault();restoreSel();document.execCommand(b.dataset.c,false,null);saveSel();}});
+  w.querySelectorAll('.fmt[data-b]').forEach(function(b){b.onclick=function(e){e.preventDefault();restoreSel();var tag=b.dataset.b;var cur=curBlock();var target=(cur===tag)?'P':tag;document.execCommand('formatBlock',false,String(target).toLowerCase());saveSel();}});
+  w.querySelectorAll('.fmt[data-a]').forEach(function(b){b.onclick=function(e){e.preventDefault();restoreSel();document.execCommand(b.dataset.a,false,null);saveSel();}});
+  w.querySelector('[data-clip]').onclick=function(){activeWriter=w;var mi=$('#media-input');if(mi)mi.click()};
+  w.querySelector('[data-link]').onclick=function(){activeWriter=w;var u=prompt('Ссылка на медиа / файл');if(u){restoreSel();document.execCommand('insertHTML',false,'<a href="'+escAttr(u)+'" target="_blank" rel="noopener">📎 '+esc(u)+'</a>');saveSel();}};
+  w.querySelector('[data-kb]').onclick=function(){var on=!w.classList.contains('kb');if(on){plain.value=rich.innerText;w.classList.add('kb');w.querySelector('[data-kb]').classList.add('on');activeWriter=w;showKB(true)}else{rich.innerText=plain.value;w.classList.remove('kb');w.querySelector('[data-kb]').classList.remove('on');showKB(false)}};
+  w.querySelector('[data-fs]').onclick=function(){var on=!w.classList.contains('fs');w.classList.toggle('fs',on);w.querySelector('[data-fs]').textContent=on?'✕':'⛶';if(on){if(w.classList.contains('kb')){plain.focus()}else{rich.focus()}}};
+  return w;
+}
+</script>
 </body>
 </html>
