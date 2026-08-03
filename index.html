@@ -946,5 +946,136 @@ function renderSchedule(){
   runReveals();
 }
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: фикс пустых глав + перетаскивание уроков/книг (Рыцарь+) ===== */
+
+/* --- Поиск главы напрямую по структуре: находит даже ПУСТЫЕ главы --- */
+function findChapter(cid){
+  for(var yi=0;yi<tree.length;yi++){
+    var y=tree[yi];var secs=y.sections||[];
+    for(var si=0;si<secs.length;si++){
+      var s=secs[si];var chs=s.chapters||[];
+      for(var ci=0;ci<chs.length;ci++){
+        if(chs[ci].id===cid)return {y:y,s:s,c:chs[ci]};
+      }
+    }
+  }
+  return null;
+}
+function findChapterBySec(sid){
+  for(var yi=0;yi<tree.length;yi++){
+    var y=tree[yi];var secs=y.sections||[];
+    for(var si=0;si<secs.length;si++){
+      if(secs[si].id===sid)return {y:y,s:secs[si],c:null};
+    }
+  }
+  return null;
+}
+
+/* --- Перестановка: доступно Рыцарю (индекс 4) и выше --- */
+var _dragLessonId=null,_dragBookId=null;
+function canReorder(u){return u&&ri(u.rank)>=4}
+function moveLesson(cid,lid,dir){
+  var f=findChapter(cid);if(!f||!f.c||!f.c.lessons)return;
+  var arr=f.c.lessons;var i=-1;for(var k=0;k<arr.length;k++){if(arr[k].id===lid){i=k;break}}
+  if(i<0)return;var j=i+dir;if(j<0||j>=arr.length)return;
+  var t=arr[i];arr[i]=arr[j];arr[j]=t;
+  putTree();buildTree();toast('Порядок уроков обновлён ✦');
+}
+function dropLesson(cid,targetLid){
+  var f=findChapter(cid);if(!f||!f.c||!f.c.lessons||!_dragLessonId)return;
+  var arr=f.c.lessons;var from=-1,to=-1;
+  for(var k=0;k<arr.length;k++){if(arr[k].id===_dragLessonId)from=k;if(arr[k].id===targetLid)to=k;}
+  if(from<0||to<0||from===to)return;
+  var item=arr.splice(from,1)[0];arr.splice(to,0,item);
+  putTree();buildTree();toast('Порядок уроков обновлён ✦');
+}
+function moveBook(bid,dir){
+  var i=-1;for(var k=0;k<library.length;k++){if(library[k].id===bid){i=k;break}}
+  if(i<0)return;var j=i+dir;if(j<0||j>=library.length)return;
+  var t=library[i];library[i]=library[j];library[j]=t;
+  putLibrary();renderLibrary();toast('Порядок книг обновлён ✦');
+}
+function dropBook(targetId){
+  if(!_dragBookId)return;
+  var from=-1,to=-1;
+  for(var k=0;k<library.length;k++){if(library[k].id===_dragBookId)from=k;if(library[k].id===targetId)to=k;}
+  if(from<0||to<0||from===to)return;
+  var item=library.splice(from,1)[0];library.splice(to,0,item);
+  putLibrary();renderLibrary();toast('Порядок книг обновлён ✦');
+}
+
+/* --- Экран уроков: пустые главы открываются + кнопки ▲▼ + перетаскивание --- */
+function rLessons(box,adm,can){
+  var f=findChapter(TV.cid);if(!f){TV.level='chapters';buildTree();return}
+  adm.innerHTML=can?'<button class="btn small" id="add-ls"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить урок</button>':'';
+  if(can&&$('#add-ls'))$('#add-ls').onclick=function(){editLesson(null,f.c.id)};
+  var st=lessonStatusMap(),list=f.c.lessons||[];
+  var canMove=canReorder(user);
+  box.innerHTML=backBtn()+'<p class="kicker">'+esc(String(f.y.year))+' · '+esc(f.s.title)+' · '+esc(f.c.title)+'</p><h2 style="font-family:Forum;font-size:24px;margin:6px 0 14px">Уроки</h2>'+(canMove&&list.length>1?'<p style="font-family:Jost;font-size:11px;color:var(--ink-2);margin:-8px 0 8px">▲▼ или перетащи, чтобы изменить порядок</p>':'')+(list.length?list.map(function(l,idx){
+    var s=st.map[l.id],txt=s==='done'?'✓ сдано':'открыт';
+    var tools=can?'<button class="iconbtn" data-editl="'+l.id+'" title="Править"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-dell="'+l.id+'" title="Удалить"><svg><use href="#i-trash"/></svg></button>':'';
+    var mv=canMove?'<button class="iconbtn" data-upl="'+l.id+'" title="Выше">▲</button><button class="iconbtn" data-dnl="'+l.id+'" title="Ниже">▼</button>':'';
+    return '<div class="lesson rv" data-tl="'+l.id+'"'+(canMove?' draggable="true" data-dragl="'+l.id+'"':'')+' style="cursor:pointer"><div class="num">'+lessonLabel(l)+'</div><div class="l-info"><h4>'+esc(l.title)+'</h4><p>'+esc(l.meta||'')+'</p><span class="st '+s+'">'+txt+'</span></div><div class="l-act">'+mv+tools+'<span class="chev"><svg><use href="#i-chev"/></svg></span></div></div>';
+  }).join(''):'<p class="empty-note">В этой теме пока нет уроков.</p>');
+  wireBack();
+  box.querySelectorAll('[data-tl]').forEach(function(el){
+    el.onclick=function(e){if(e.target.closest('.iconbtn'))return;TV.level='lesson';TV.lid=el.dataset.tl;buildTree()};
+    if(canMove){
+      el.addEventListener('dragstart',function(e){_dragLessonId=el.dataset.dragl;if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',_dragLessonId)}catch(_){}}});
+      el.addEventListener('dragover',function(e){e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move'});
+      el.addEventListener('drop',function(e){e.preventDefault();var tgt=el.dataset.dragl;if(_dragLessonId&&_dragLessonId!==tgt){dropLesson(f.c.id,tgt)}_dragLessonId=null});
+    }
+  });
+  box.querySelectorAll('[data-upl]').forEach(function(b){b.onclick=function(e){e.stopPropagation();moveLesson(f.c.id,b.dataset.upl,-1)}});
+  box.querySelectorAll('[data-dnl]').forEach(function(b){b.onclick=function(e){e.stopPropagation();moveLesson(f.c.id,b.dataset.dnl,1)}});
+  box.querySelectorAll('[data-editl]').forEach(function(b){b.onclick=function(e){e.stopPropagation();editLesson(b.dataset.editl,null)}});
+  box.querySelectorAll('[data-dell]').forEach(function(b){b.onclick=function(e){e.stopPropagation();delLesson(b.dataset.dell)}});
+  runReveals();
+}
+
+/* --- Библиотека: кнопки ▲▼ + перетаскивание книг --- */
+function renderLibrary(){
+  ensureLibCats();var can=isMaster(user);
+  $('#lib-admin').innerHTML=can?'<button class="btn small" id="add-book"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить труд</button> <button class="btn ghost small" id="add-cat"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-plus"/></svg> Добавить раздел</button>':'';
+  if(can&&$('#add-book'))$('#add-book').onclick=function(){addBook(null)};
+  if(can&&$('#add-cat'))$('#add-cat').onclick=function(){var v=prompt('Название нового раздела библиотеки:');if(!v||!v.trim())return;config.libCats.push({id:uid('cat'),label:v.trim()});putConfig();renderLibrary();toast('Раздел добавлен ✦')};
+  var cats=[['all','Все']].concat((config.libCats||[]).map(function(c){return[c.id,c.label]}));
+  $('#lib-chips').innerHTML=cats.map(function(c){var del=(can&&c[0]!=='all')?' <button class="iconbtn dng" data-delcat="'+c[0]+'" style="width:20px;height:20px;vertical-align:-2px" title="Удалить раздел"><svg style="width:12px;height:12px"><use href="#i-trash"/></svg></button>':'';return '<button class="chip '+(libFilter===c[0]?'on':'')+'" data-f="'+c[0]+'">'+esc(c[1])+del+'</button>'}).join('');
+  $$('#lib-chips .chip').forEach(function(b){b.onclick=function(e){if(e.target.closest('[data-delcat]'))return;libFilter=b.dataset.f;renderLibrary()}});
+  $$('#lib-chips [data-delcat]').forEach(function(b){b.onclick=function(e){e.stopPropagation();confirmModal('Удалить раздел? (книги останутся)',function(){config.libCats=config.libCats.filter(function(c){return c.id!==b.dataset.delcat});if(libFilter===b.dataset.delcat)libFilter='all';putConfig();renderLibrary()})}});
+  var me=user?findMember(user.name):null; var rb=(me&&me.readBooks)||[];
+  var canMove=canReorder(user);
+  var shown=library.filter(function(b){return libFilter==='all'||b.cat===libFilter});
+  $('#lib-list').innerHTML=shown.length?shown.map(function(b,idx){
+    var open=b.url?'<a class="dl" href="'+escAttr(b.url)+'" target="_blank" rel="noopener">Открыть</a>':'<span class="dl">Нет ссылки</span>';
+    var tools=can?'<button class="iconbtn" data-editb="'+b.id+'" title="Править"><svg><use href="#i-edit"/></svg></button><button class="iconbtn dng" data-delb="'+b.id+'" title="Удалить"><svg><use href="#i-trash"/></svg></button>':'';
+    var cover=b.cover?'<div class="cover" style="padding:0;overflow:hidden"><img src="'+escAttr(b.cover)+'" style="width:100%;height:100%;object-fit:cover;display:block"></div>':'<div class="cover">'+esc(b.letter||b.title[0]||'?')+'</div>';
+    var ann=b.ann?'<div class="b-ann" id="ann-'+b.id+'" style="display:none">'+esc(b.ann)+'</div><button class="b-ann-toggle" data-ann="'+b.id+'">Читать аннотацию ▾</button>':'';
+    var rdone=rb.indexOf(b.id)>=0;
+    var readBtn=user?'<button class="btn ghost small" data-readb="'+b.id+'" style="margin:0;padding:8px 12px;white-space:nowrap;'+(rdone?'background:linear-gradient(135deg,#4d6e5b,var(--green));border-color:var(--green);color:#fff':'')+'">'+(rdone?'✓ Прочитано':'Прочитано')+'</button>':'';
+    var mv=canMove?'<button class="iconbtn" data-upb="'+b.id+'" title="Выше">▲</button><button class="iconbtn" data-dnb="'+b.id+'" title="Ниже">▼</button>':'';
+    return '<div class="book rv"'+(canMove?' draggable="true" data-dragb="'+b.id+'"':'')+'>'+cover+'<div class="b-info"><h4>'+esc(b.title)+'</h4><p>'+esc(b.author||'')+' · '+esc(b.size||'')+'</p>'+ann+'</div>'+mv+readBtn+tools+open+'</div>';
+  }).join(''):'<p class="empty-note">Пусто.</p>';
+  $$('#lib-list [data-delb]').forEach(function(b){b.onclick=function(){confirmModal('Удалить труд?',function(){library=library.filter(function(x){return x.id!==b.dataset.delb});putLibrary();renderLibrary()})}});
+  $$('#lib-list [data-editb]').forEach(function(b){b.onclick=function(){addBook(b.dataset.editb)}});
+  $$('#lib-list [data-ann]').forEach(function(b){b.onclick=function(){var a=$('#ann-'+b.dataset.ann);if(!a)return;var open=a.style.display==='none';a.style.display=open?'block':'none';b.textContent=open?'Скрыть аннотацию ▴':'Читать аннотацию ▾'}});
+  $$('#lib-list [data-readb]').forEach(function(b){b.onclick=function(){
+    if(!me)return; me.readBooks=me.readBooks||[]; var id=b.dataset.readb; var i=me.readBooks.indexOf(id);
+    if(i>=0)me.readBooks.splice(i,1); else me.readBooks.push(id);
+    putMember(me); toast(i>=0?'Отметка снята':'Книга отмечена прочитанной ✦'); renderLibrary();
+  }});
+  $$('#lib-list [data-upb]').forEach(function(b){b.onclick=function(){moveBook(b.dataset.upb,-1)}});
+  $$('#lib-list [data-dnb]').forEach(function(b){b.onclick=function(){moveBook(b.dataset.dnb,1)}});
+  if(canMove){
+    $$('#lib-list .book[data-dragb]').forEach(function(el){
+      el.addEventListener('dragstart',function(e){_dragBookId=el.dataset.dragb;if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',_dragBookId)}catch(_){}}});
+      el.addEventListener('dragover',function(e){e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move'});
+      el.addEventListener('drop',function(e){e.preventDefault();var tgt=el.dataset.dragb;if(_dragBookId&&_dragBookId!==tgt){dropBook(tgt)}_dragBookId=null});
+    });
+  }
+  runReveals();
+}
+</script>
 </body>
 </html>
