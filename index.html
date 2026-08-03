@@ -1130,5 +1130,78 @@ function mountWriter(mount,ph,opts){
   return w;
 }
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: рабочее форматирование на телефоне + разные красивые заголовки ===== */
+(function(){
+var st=document.createElement('style');
+st.textContent=''+
+'.rich h1,.bio h1{font-family:"Forum",serif;font-size:26px;line-height:1.2;color:var(--gold-3);letter-spacing:.05em;margin:.55em 0 .3em}'+
+'.rich h2,.bio h2{font-family:"Forum",serif;font-size:20px;line-height:1.25;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:4px;margin:.55em 0 .3em}'+
+'.rich h3,.bio h3{font-family:"Jost",sans-serif;font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-3);margin:.5em 0 .25em}';
+document.head.appendChild(st);
+})();
+
+function mountWriter(mount,ph,opts){
+  opts=opts||{};
+  mount.innerHTML='<div class="writer"><div class="wbar">'+
+    '<button class="fmt b" type="button" data-c="bold">Ж</button>'+
+    '<button class="fmt i" type="button" data-c="italic">К</button>'+
+    '<button class="fmt u" type="button" data-c="underline">П</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-b="H1">H1</button>'+
+    '<button class="fmt" type="button" data-b="H2">H2</button>'+
+    '<button class="fmt" type="button" data-b="H3">H3</button>'+
+    '<button class="fmt" type="button" data-b="P" title="Обычный текст">¶</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-a="justifyLeft" title="По левому краю">⬅</button>'+
+    '<button class="fmt" type="button" data-a="justifyCenter" title="По центру">⬌</button>'+
+    '<button class="fmt" type="button" data-a="justifyRight" title="По правому краю">➡</button>'+
+    '<button class="fmt" type="button" data-a="justifyFull" title="По ширине">☰</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="fmt" type="button" data-b="BLOCKQUOTE">❝</button>'+
+    '<span class="sep fmt"></span>'+
+    '<button class="clip" type="button" data-clip title="Фото / видео / аудио"><svg><use href="#i-link"/></svg></button>'+
+    '<button class="clip" type="button" data-link title="Ссылка"><svg><use href="#i-link"/></svg></button>'+
+    '<button class="kb-toggle" type="button" data-kb title="Гравировка (клавиатура)">⌨</button>'+
+    '<button class="fmt fs-x" type="button" data-fs title="Во весь экран">⛶</button>'+
+    '</div><div class="rich" contenteditable="true" data-ph="'+ph+'"></div><textarea class="plain" inputmode="none"></textarea></div>'+
+    (opts.withSend?'<div class="send-row"><button class="btn" id="chat-send">Отправить</button></div>':'');
+  var w=mount.querySelector('.writer');var rich=w.querySelector('.rich');var plain=w.querySelector('.plain');
+  var savedRange=null;
+  function inRich(r){try{return rich.contains(r.commonAncestorContainer)}catch(_){return false}}
+  function saveSel(){try{var s=window.getSelection();if(s.rangeCount>0&&inRich(s.getRangeAt(0)))savedRange=s.getRangeAt(0).cloneRange();}catch(_){}}
+  function restoreSel(){try{rich.focus();var s=window.getSelection();var ok=s.rangeCount>0&&inRich(s.getRangeAt(0));if(!ok&&savedRange){s.removeAllRanges();s.addRange(savedRange);}else if(!ok&&rich.firstChild){var r=document.createRange();r.selectNodeContents(rich);r.collapse(false);s.removeAllRanges();s.addRange(r);}}catch(_){}}
+  document.addEventListener('selectionchange',saveSel);
+  rich.addEventListener('keyup',saveSel);
+  rich.addEventListener('mouseup',saveSel);
+  rich.addEventListener('touchend',saveSel);
+  function curBlock(){
+    var s=window.getSelection();var node=s.anchorNode;
+    while(node&&node!==rich){
+      if(node.nodeType===1){var tn=node.tagName.toUpperCase();if(tn==='H1'||tn==='H2'||tn==='H3'||tn==='BLOCKQUOTE'||tn==='P'||tn==='DIV')return tn;}
+      node=node.parentNode;
+    }
+    return '';
+  }
+  function run(fn){restoreSel();fn();saveSel();}
+  w.querySelectorAll('.fmt[data-c]').forEach(function(b){
+    b.addEventListener('pointerdown',function(e){e.preventDefault();});
+    b.onclick=function(e){e.preventDefault();run(function(){document.execCommand(b.dataset.c,false,null);});};
+  });
+  w.querySelectorAll('.fmt[data-b]').forEach(function(b){
+    b.addEventListener('pointerdown',function(e){e.preventDefault();});
+    b.onclick=function(e){e.preventDefault();run(function(){var tag=b.dataset.b;var cur=curBlock();var target=(cur===tag)?'P':tag;document.execCommand('formatBlock',false,target.toLowerCase());});};
+  });
+  w.querySelectorAll('.fmt[data-a]').forEach(function(b){
+    b.addEventListener('pointerdown',function(e){e.preventDefault();});
+    b.onclick=function(e){e.preventDefault();run(function(){document.execCommand(b.dataset.a,false,null);});};
+  });
+  w.querySelector('[data-clip]').onclick=function(){activeWriter=w;var mi=$('#media-input');if(mi)mi.click()};
+  w.querySelector('[data-link]').onclick=function(){activeWriter=w;var u=prompt('Ссылка на медиа / файл');if(u){run(function(){document.execCommand('insertHTML',false,'<a href="'+escAttr(u)+'" target="_blank" rel="noopener">📎 '+esc(u)+'</a>');});}};
+  w.querySelector('[data-kb]').onclick=function(){var on=!w.classList.contains('kb');if(on){plain.value=rich.innerText;w.classList.add('kb');w.querySelector('[data-kb]').classList.add('on');activeWriter=w;showKB(true)}else{rich.innerText=plain.value;w.classList.remove('kb');w.querySelector('[data-kb]').classList.remove('on');showKB(false)}};
+  w.querySelector('[data-fs]').onclick=function(){var on=!w.classList.contains('fs');w.classList.toggle('fs',on);w.querySelector('[data-fs]').textContent=on?'✕':'⛶';if(on){if(w.classList.contains('kb')){plain.focus()}else{rich.focus()}}};
+  return w;
+}
+</script>
 </body>
 </html>
