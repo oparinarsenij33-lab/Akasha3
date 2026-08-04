@@ -1203,5 +1203,16 @@ function mountWriter(mount,ph,opts){
   return w;
 }
 </script>
+  <script>
+/* ===== НАДСТРОЙКА: витиеватые, плотные, разные по цвету заголовки ===== */
+(function(){
+var st=document.createElement('style');
+st.textContent=''+
+'.rich h1,.bio h1{font-family:"Forum",serif;font-weight:700;font-size:28px;line-height:1.15;color:var(--gold-3);letter-spacing:.03em;margin:.6em 0 .35em;-webkit-text-stroke:.5px var(--gold-3);text-shadow:0 1px 0 rgba(184,145,47,.18)}'+
+'.rich h2,.bio h2{font-family:"Forum",serif;font-weight:700;font-size:22px;line-height:1.2;color:var(--gold);letter-spacing:.03em;border-bottom:1px solid var(--line-soft);padding-bottom:4px;margin:.6em 0 .35em;-webkit-text-stroke:.4px var(--gold);text-shadow:0 1px 0 rgba(184,145,47,.12)}'+
+'.rich h3,.bio h3{font-family:"Vollkorn",serif;font-style:italic;font-weight:600;font-size:18px;line-height:1.25;color:var(--red);margin:.55em 0 .3em}';
+document.head.appendChild(st);
+})();
+</script>
 </body>
 </html>
