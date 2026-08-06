@@ -1246,5 +1246,37 @@ db.collection('members').onSnapshot(function(snap){
   renderFeatured();renderHallHints();
 },function(){});
 </script>
+  <script>
+/* ===== ФИКС v2: размер книги + Зал обновляется после загрузки (маркер: AB_SIZE_FIX) ===== */
+function addBook(editId){
+  ensureLibCats();_bookCoverData='';
+  var ed=editId?library.find(function(x){return x.id===editId}):null;
+  var catOpts=(config.libCats||[]).map(function(c){return '<option value="'+c.id+'" '+((ed&&ed.cat===c.id)?'selected':'')+'>'+esc(c.label)+'</option>'}).join('');
+  openModal('<button class="x" data-x>×</button><h2>'+(ed?'Править труд':'Новый труд')+'</h2>'+
+    '<div class="field"><label>Название</label><input id="ab-title" type="text" value="'+esc(ed?ed.title:'')+'"></div>'+
+    '<div class="field"><label>Автор</label><input id="ab-author" type="text" value="'+esc(ed?ed.author:'')+'"></div>'+
+    '<div class="field"><label>Размер (напр. 4 МБ)</label><input id="ab-size" type="text" value="'+esc(ed&&ed.size&&ed.size!=='—'?ed.size:'')+'" placeholder="Напр. 4 МБ"></div>'+
+    '<div class="field sel"><label>Раздел</label><select id="ab-cat">'+catOpts+'</select></div>'+
+    '<div class="field"><label>Ссылка (необяз.)</label><input id="ab-url" type="text" value="'+esc(ed?ed.url:'')+'"></div>'+
+    '<div class="field"><label>Аннотация</label><textarea id="ab-ann" style="width:100%;min-height:90px;padding:10px;font:15px Vollkorn;border:1px solid var(--line);border-radius:4px">'+esc(ed?ed.ann:'')+'</textarea></div>'+
+    '<div class="field"><label>Обложка</label><div style="display:flex;gap:10px;align-items:center"><button class="btn ghost small" id="ab-cover-btn" type="button" style="margin:0">Загрузить обложку</button><span id="bk-cover-pv">'+(ed&&ed.cover?'<img src="'+escAttr(ed.cover)+'" style="width:46px;height:64px;object-fit:cover;display:block">':'')+'</span></div></div>'+
+    '<div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="ab-ok">'+(ed?'Сохранить':'Добавить')+'</button></div>');
+  $('#ab-cover-btn').onclick=function(){var bi=$('#book-input');if(bi)bi.click()};
+  $('#ab-ok').onclick=function(){
+    var t=$('#ab-title').value.trim();if(!t){toast('Введи название');return}
+    var sz=$('#ab-size').value.trim()||'—';
+    var data={cat:$('#ab-cat').value,title:t,author:$('#ab-author').value.trim(),size:sz,letter:t[0]||'?',url:$('#ab-url').value.trim(),ann:$('#ab-ann').value.trim(),cover:_bookCoverData||(ed?ed.cover:'')};
+    if(ed){ed.cat=data.cat;ed.title=data.title;ed.author=data.author;ed.size=data.size;ed.url=data.url;ed.ann=data.ann;ed.cover=data.cover;logCouncil('<b>'+esc(user.name)+'</b> обновил(а) труд «'+esc(t)+'»')}
+    else{data.id=uid('B');library.push(data);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) «'+esc(t)+'»')}
+    _bookCoverData='';putLibrary();closeModal();renderLibrary();
+  };
+}
+db.collection('members').onSnapshot(function(snap){
+  if(!OPEN)return;
+  roster=snap.docs.map(function(d){return d.data()});
+  normalizeRoster();
+  renderFeatured();renderHallHints();
+},function(){});
+</script>
 </body>
 </html>
