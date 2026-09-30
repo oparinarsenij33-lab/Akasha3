@@ -1278,5 +1278,33 @@ db.collection('members').onSnapshot(function(snap){
   renderFeatured();renderHallHints();
 },function(){});
 </script>
+  <script>
+/* ===== IMGBB: готовая загрузка медиа (перекрывает старую) ===== */
+var IMGBB_KEY='08768705f33c731364be0e19c188d2f1';
+function uploadMedia(file,cb){
+  if(file.type&&file.type.indexOf('image/')===0){
+    toast('Загружаю фото на сервер…');
+    var fd=new FormData();fd.append('image',file);
+    fetch('https://api.imgbb.com/1/upload?key='+IMGBB_KEY,{method:'POST',body:fd})
+    .then(function(r){return r.json()})
+    .then(function(j){
+      var u=(j&&j.data&&(j.data.url||j.data.display_url))||'';
+      if(!u&&j&&j.data&&j.data.image)u=j.data.image.url||'';
+      if(u){cb(u);toast('Фото загружено ✦');}
+      else{toast('Сервер отказал, сжимаю локально…');readImageSmall(file,function(d){cb(d)},1200,.85);}
+    })
+    .catch(function(){toast('Сбой сети, сжимаю локально…');readImageSmall(file,function(d){cb(d)},1200,.85);});
+    return;
+  }
+  if(file.size&&file.size>400*1024){
+    toast('Видео/аудио тяжёлое: загрузи на YouTube/VK и вставь через кнопку «Ссылка».');
+    return;
+  }
+  var r=new FileReader();
+  r.onload=function(ev){cb(ev.target.result);};
+  r.readAsDataURL(file);
+}
+</script>
+</html>
 </body>
 </html>
