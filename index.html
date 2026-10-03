@@ -1307,4 +1307,184 @@ function uploadMedia(file,cb){
 </script>
 </html>
 </body>
+<script>
+/* ===== НАДСТРОЙКА: Летопись Ордена + группировка уроков по году и категории ===== */
+var newsFeed=[];
+function trunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n)+'…':s}
+function putNews(){if(!FS)return;M('news').set({data:newsFeed}).catch(function(){})}
+function pushNews(type,text,meta){if(!user)return;newsFeed.unshift({id:uid('N'),ts:Date.now(),author:user.name,rank:user.rank,type:type,text:text,meta:meta||''});newsFeed=newsFeed.slice(0,60);putNews();renderNews();}
+function ensureNewsBox(){
+  if($('#hall-news'))return;
+  var sec=document.createElement('div');sec.id='hall-news';
+  sec.innerHTML='<div class="sec-h"><h2>Летопись Ордена</h2><span id="news-count"></span></div><div id="news-composer"></div><div id="news-feed" class="log" style="max-height:340px"></div>';
+  var th=$('#today2');var anchor=th?th.closest('.sec-h'):null;
+  if(anchor&&anchor.parentNode){anchor.parentNode.insertBefore(sec,anchor);}
+  else{var hall=$('#s-hall');if(hall)hall.appendChild(sec);}
+}
+function renderNews(){
+  ensureNewsBox();
+  var box=$('#news-feed');if(!box)return;
+  var cc=$('#news-count');if(cc)cc.textContent=newsFeed.length+' записей';
+  var comp=$('#news-composer');
+  if(comp){
+    comp.innerHTML=(user&&ri(user.rank)>=2)?'<div class="writer" style="margin-top:0"><div class="rich" id="news-text" contenteditable="true" data-ph="Новость Ордена… (доступно от Падавана и выше)" style="min-height:40px;max-height:140px"></div></div><button class="btn small" id="news-send" style="margin-top:8px">Опубликовать в Летопись</button>':'';
+    var ns=$('#news-send');
+    if(ns)ns.onclick=function(){var el=$('#news-text');var txt=el?el.innerText.trim():'';if(!txt){toast('Напиши текст новости');return}pushNews('news',txt,'');el.innerHTML='';toast('Новость опубликована ✦');};
+  }
+  box.innerHTML=newsFeed.length?newsFeed.map(function(n){
+    var ico=n.type==='lesson-del'?'🗑':(n.type==='news'?'📰':'📜');
+    return '<div class="li">'+ico+' <b>'+esc(n.author||'—')+'</b> <span class="tag rank">'+esc(n.rank||'')+'</span> · '+timeAgo(n.ts||Date.now())+'<div style="margin-top:2px;color:var(--ink)">'+esc(n.text)+'</div>'+(n.meta?'<div style="margin-top:2px;font-size:10px;letter-spacing:.08em;color:var(--gold-3)">'+esc(n.meta)+'</div>':'')+'</div>';
+  }).join(''):'<div class="li">Летопись пока пуста — добавь первый урок или опубликуй новость.</div>';
+}
+/* --- таблица успеваемости: год → категория → урок --- */
+function renderProgress(){
+  var box=$('#progress-list');if(!box)return;
+  var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
+  box.innerHTML=sorted.map(function(m){
+    var idx=ri(m.rank);
+    var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});
+    var passed=avail.filter(function(o){return (m.progress||[]).indexOf(o.l.id)>=0}).length;
+    var pct=avail.length?Math.round(passed/avail.length*100):0;
+    var o=onlineInfo(m.name);var canEdit=isMaster(user);
+    var groups={};
+    allLessons().forEach(function(o2){
+      var yk=String(o2.y.year);groups[yk]=groups[yk]||{};
+      var sk=o2.s.title||('Уроки для ранга '+o2.s.rank);
+      groups[yk][sk]=groups[yk][sk]||{rank:o2.s.rank,items:[]};
+      groups[yk][sk].items.push({l:o2.l,lock:ri(o2.s.rank)>idx,pass:(m.progress||[]).indexOf(o2.l.id)>=0});
+    });
+    var marks=Object.keys(groups).sort(function(a,b){return (+a)-(+b)}).map(function(yk){
+      var inner=Object.keys(groups[yk]).map(function(sk){
+        var g=groups[yk][sk];
+        return '<div style="margin:8px 0 4px;font-family:Jost;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)">Категория: '+esc(sk)+' · ранг '+esc(g.rank)+'</div><div class="lessons" style="margin-top:0">'+g.items.map(function(it){return '<span class="lmark '+(it.lock?'lock':(it.pass?'pass':''))+'" title="'+escAttr(it.l.title)+'">'+lessonLabel(it.l)+' '+(it.lock?'🔒':(it.pass?'✓':'·'))+' '+esc(trunc(it.l.title,26))+'</span>'}).join('')+'</div>';
+      }).join('');
+      return '<div style="margin-top:10px"><div style="font-family:Jost;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-3)">Учебный год '+esc(yk)+'</div>'+inner+'</div>';
+    }).join('');
+    var rb=m.readBooks||[];var rbc=library.filter(function(bk){return rb.indexOf(bk.id)>=0}).length;
+    var bookBlock=library.length?'<div style="margin-top:12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">Книги · прочитано '+rbc+' из '+library.length+'</div><div class="lessons" style="margin-top:4px">'+library.map(function(bk){var rp=rb.indexOf(bk.id)>=0;return '<span class="lmark '+(rp?'pass':'')+'">'+(rp?'✓ ':'· ')+esc(bk.title)+'</span>'}).join('')+'</div>':'';
+    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · уроков сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div style="margin-top:4px">'+marks+'</div>'+bookBlock+'</div>';
+  }).join('')||'<p class="empty-note">Нет учеников.</p>';
+  $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
+}
+/* --- уроки: авто-записи в Летопись при добавлении/удалении --- */
+function editLesson(id,cid){
+  var create=!id,f=create?findChapter(cid):findLesson(id),l=create?{n:'',title:'',meta:'',body:''}:f.l;
+  if(!f)return;
+  openModal('<button class="x" data-x>×</button><h2>'+(create?'Новый урок':'Править урок')+'</h2><div class="field"><label>Обозначение (необяз.)</label><input id="el-n" type="text" value="'+esc(l.n||'')+'"></div><div class="field"><label>Название</label><input id="el-title" type="text" value="'+esc(l.title||'')+'"></div><div class="field"><label>Мета (формат / длительность)</label><input id="el-meta" type="text" value="'+esc(l.meta||'')+'"></div><div class="field"><label>Текст урока</label><div id="el-writer-mount" style="margin-top:8px"></div></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">'+(create?'Создать':'Сохранить')+'</button></div>');
+  var w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{});if(!create)setWriterHTML(w,l.body||'');
+  $('#el-ok').onclick=function(){
+    var title=$('#el-title').value.trim();if(!title)return;
+    var data={n:$('#el-n').value.trim(),title:title,meta:$('#el-meta').value.trim(),body:getWriterHTML(w)};
+    var where='Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title;
+    if(create){data.id=uid('L');f.c.lessons=f.c.lessons||[];f.c.lessons.push(data);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) урок «'+esc(title)+'»');pushNews('lesson-add','Добавлен урок «'+title+'»',where);}
+    else{l.n=data.n;l.title=data.title;l.meta=data.meta;l.body=data.body;logCouncil('<b>'+esc(user.name)+'</b> отредактировал(а) урок «'+esc(title)+'»');pushNews('lesson-add','Обновлён урок «'+title+'»',where);}
+    closeModal();TV.level='lessons';if(create)TV.cid=cid;refreshAfterTree();
+  };
+}
+function delLesson(id){
+  var f=findLesson(id);if(!f)return;
+  confirmModal('Удалить урок «'+f.l.title+'»?',function(){
+    f.c.lessons=f.c.lessons.filter(function(x){return x.id!==id});
+    logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');
+    pushNews('lesson-del','Убран урок «'+f.l.title+'»','Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title);
+    refreshAfterTree();
+  });
+}
+/* --- подписка на Летопись + отрисовка при входе --- */
+ensureNewsBox();
+if(FS){M('news').onSnapshot(function(d){newsFeed=d.exists?(d.data().data||[]):[];if(OPEN)renderNews();},function(){});}
+var _baseOpenApp=openApp;
+openApp=function(){_baseOpenApp.apply(this,arguments);ensureNewsBox();renderNews();};
+</script>
+</body>
+<script>
+/* ===== НАДСТРОЙКА: Галактический Вестник (новости) + группировка уроков по году и категории ===== */
+var newsFeed=[];
+function trunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n)+'…':s}
+function putNews(){if(!FS)return;M('news').set({data:newsFeed}).catch(function(){})}
+function pushNews(type,text,meta){if(!user)return;newsFeed.unshift({id:uid('N'),ts:Date.now(),author:user.name,rank:user.rank,type:type,text:text,meta:meta||''});newsFeed=newsFeed.slice(0,60);putNews();renderNews();}
+function ensureNewsBox(){
+  if($('#hall-news'))return;
+  var sec=document.createElement('div');sec.id='hall-news';
+  sec.innerHTML='<div class="sec-h"><h2>Галактический Вестник</h2><span id="news-count"></span></div><div id="news-composer"></div><div id="news-feed" class="log" style="max-height:340px"></div>';
+  var th=$('#today2');var anchor=th?th.closest('.sec-h'):null;
+  if(anchor&&anchor.parentNode){anchor.parentNode.insertBefore(sec,anchor);}
+  else{var hall=$('#s-hall');if(hall)hall.appendChild(sec);}
+}
+function renderNews(){
+  ensureNewsBox();
+  var box=$('#news-feed');if(!box)return;
+  var cc=$('#news-count');if(cc)cc.textContent=newsFeed.length+' записей';
+  var comp=$('#news-composer');
+  if(comp){
+    comp.innerHTML=(user&&ri(user.rank)>=2)?'<div class="writer" style="margin-top:0"><div class="rich" id="news-text" contenteditable="true" data-ph="Новость Ордена… (доступно от Падавана и выше)" style="min-height:40px;max-height:140px"></div></div><button class="btn small" id="news-send" style="margin-top:8px">Опубликовать в Вестник</button>':'';
+    var ns=$('#news-send');
+    if(ns)ns.onclick=function(){var el=$('#news-text');var txt=el?el.innerText.trim():'';if(!txt){toast('Напиши текст новости');return}pushNews('news',txt,'');el.innerHTML='';toast('Новость опубликована в Вестнике ✦');};
+  }
+  box.innerHTML=newsFeed.length?newsFeed.map(function(n){
+    var ico=n.type==='lesson-del'?'🗑':(n.type==='news'?'📰':'');
+    return '<div class="li">'+ico+' <b>'+esc(n.author||'—')+'</b> <span class="tag rank">'+esc(n.rank||'')+'</span> · '+timeAgo(n.ts||Date.now())+'<div style="margin-top:2px;color:var(--ink)">'+esc(n.text)+'</div>'+(n.meta?'<div style="margin-top:2px;font-size:10px;letter-spacing:.08em;color:var(--gold-3)">'+esc(n.meta)+'</div>':'')+'</div>';
+  }).join(''):'<div class="li">Вестник пока пуст — добавь первый урок или опубликуй новость.</div>';
+}
+/* --- таблица успеваемости: год → категория → урок --- */
+function renderProgress(){
+  var box=$('#progress-list');if(!box)return;
+  var sorted=roster.slice().filter(function(m){return m.status!=='Исключён'}).sort(function(a,b){return ri(b.rank)-ri(a.rank)});
+  box.innerHTML=sorted.map(function(m){
+    var idx=ri(m.rank);
+    var avail=allLessons().filter(function(o){return ri(o.s.rank)<=idx});
+    var passed=avail.filter(function(o){return (m.progress||[]).indexOf(o.l.id)>=0}).length;
+    var pct=avail.length?Math.round(passed/avail.length*100):0;
+    var o=onlineInfo(m.name);var canEdit=isMaster(user);
+    var groups={};
+    allLessons().forEach(function(o2){
+      var yk=String(o2.y.year);groups[yk]=groups[yk]||{};
+      var sk=o2.s.title||('Уроки для ранга '+o2.s.rank);
+      groups[yk][sk]=groups[yk][sk]||{rank:o2.s.rank,items:[]};
+      groups[yk][sk].items.push({l:o2.l,lock:ri(o2.s.rank)>idx,pass:(m.progress||[]).indexOf(o2.l.id)>=0});
+    });
+    var marks=Object.keys(groups).sort(function(a,b){return (+a)-(+b)}).map(function(yk){
+      var inner=Object.keys(groups[yk]).map(function(sk){
+        var g=groups[yk][sk];
+        return '<div style="margin:8px 0 4px;font-family:Jost;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)">Категория: '+esc(sk)+' · ранг '+esc(g.rank)+'</div><div class="lessons" style="margin-top:0">'+g.items.map(function(it){return '<span class="lmark '+(it.lock?'lock':(it.pass?'pass':''))+'" title="'+escAttr(it.l.title)+'">'+lessonLabel(it.l)+' '+(it.lock?'🔒':(it.pass?'✓':'·'))+' '+esc(trunc(it.l.title,26))+'</span>'}).join('')+'</div>';
+      }).join('');
+      return '<div style="margin-top:10px"><div style="font-family:Jost;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-3)">Учебный год '+esc(yk)+'</div>'+inner+'</div>';
+    }).join('');
+    var rb=m.readBooks||[];var rbc=library.filter(function(bk){return rb.indexOf(bk.id)>=0}).length;
+    var bookBlock=library.length?'<div style="margin-top:12px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)">Книги · прочитано '+rbc+' из '+library.length+'</div><div class="lessons" style="margin-top:4px">'+library.map(function(bk){var rp=rb.indexOf(bk.id)>=0;return '<span class="lmark '+(rp?'pass':'')+'">'+(rp?'✓ ':'· ')+esc(bk.title)+'</span>'}).join('')+'</div>':'';
+    return '<div class="prog-card rv"><div class="top">'+avatarHTML(m.name)+'<h4>'+esc(m.name)+' <span class="tag rank">'+m.rank+'</span></h4><span class="pres-txt '+(o.on?'on':'')+'">'+o.txt+'</span>'+(canEdit?'<button class="iconbtn" data-editp="'+esc(m.name)+'"><svg><use href="#i-edit"/></svg></button>':'')+'</div><div class="ln" style="font-family:Jost;font-size:11px;color:var(--ink-2);margin-top:8px">'+(m.teacher?'Учитель: '+esc(m.teacher):'—')+' · уроков сдано '+passed+' из '+avail.length+' ('+pct+'%)</div><div class="bar"><div class="progress"><i style="width:'+pct+'%"></i></div></div><div style="margin-top:4px">'+marks+'</div>'+bookBlock+'</div>';
+  }).join('')||'<p class="empty-note">Нет учеников.</p>';
+  $$('#progress-list [data-editp]').forEach(function(b){b.onclick=function(){editProgress(b.dataset.editp)}});runReveals();
+}
+/* --- уроки: авто-записи в Вестник при добавлении/удалении --- */
+function editLesson(id,cid){
+  var create=!id,f=create?findChapter(cid):findLesson(id),l=create?{n:'',title:'',meta:'',body:''}:f.l;
+  if(!f)return;
+  openModal('<button class="x" data-x>×</button><h2>'+(create?'Новый урок':'Править урок')+'</h2><div class="field"><label>Обозначение (необяз.)</label><input id="el-n" type="text" value="'+esc(l.n||'')+'"></div><div class="field"><label>Название</label><input id="el-title" type="text" value="'+esc(l.title||'')+'"></div><div class="field"><label>Мета (формат / длительность)</label><input id="el-meta" type="text" value="'+esc(l.meta||'')+'"></div><div class="field"><label>Текст урока</label><div id="el-writer-mount" style="margin-top:8px"></div></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">'+(create?'Создать':'Сохранить')+'</button></div>');
+  var w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{});if(!create)setWriterHTML(w,l.body||'');
+  $('#el-ok').onclick=function(){
+    var title=$('#el-title').value.trim();if(!title)return;
+    var data={n:$('#el-n').value.trim(),title:title,meta:$('#el-meta').value.trim(),body:getWriterHTML(w)};
+    var where='Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title;
+    if(create){data.id=uid('L');f.c.lessons=f.c.lessons||[];f.c.lessons.push(data);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) урок «'+esc(title)+'»');pushNews('lesson-add','Добавлен урок «'+title+'»',where);}
+    else{l.n=data.n;l.title=data.title;l.meta=data.meta;l.body=data.body;logCouncil('<b>'+esc(user.name)+'</b> отредактировал(а) урок «'+esc(title)+'»');pushNews('lesson-add','Обновлён урок «'+title+'»',where);}
+    closeModal();TV.level='lessons';if(create)TV.cid=cid;refreshAfterTree();
+  };
+}
+function delLesson(id){
+  var f=findLesson(id);if(!f)return;
+  confirmModal('Удалить урок «'+f.l.title+'»?',function(){
+    f.c.lessons=f.c.lessons.filter(function(x){return x.id!==id});
+    logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');
+    pushNews('lesson-del','Убран урок «'+f.l.title+'»','Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title);
+    refreshAfterTree();
+  });
+}
+/* --- подписка на Вестник + отрисовка при входе --- */
+ensureNewsBox();
+if(FS){M('news').onSnapshot(function(d){newsFeed=d.exists?(d.data().data||[]):[];if(OPEN)renderNews();},function(){});}
+var _baseOpenApp=openApp;
+openApp=function(){_baseOpenApp.apply(this,arguments);ensureNewsBox();renderNews();};
+</script>
+</body>
 </html>
