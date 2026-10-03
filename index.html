@@ -1618,4 +1618,148 @@ function renderNews(){
   runReveals();
 }
 </script>
+<script>
+/* ===== НАДСТРОЙКА v4: кликабельный Вестник + редактор фото в редакторе ===== */
+(function(){var st=document.createElement('style');st.textContent=
+'.news-card.clickable{cursor:pointer}'+
+'.news-card.clickable:hover{border-color:var(--gold)}'+
+'.nc-open{display:inline-block;margin-top:8px;font-family:Jost;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-3)}'+
+'.rich img{cursor:pointer;outline:2px solid transparent;transition:outline .15s}'+
+'.rich img.sel{outline:2px solid var(--gold)}'+
+'#img-bar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:96;display:none;gap:4px;align-items:center;background:linear-gradient(180deg,#2c2417,#1c160d);border:1px solid var(--gold);border-radius:8px;padding:6px 8px;box-shadow:0 10px 30px -10px rgba(0,0,0,.6);flex-wrap:wrap;justify-content:center;max-width:94vw}'+
+'#img-bar.show{display:flex}'+
+'#img-bar button{min-width:30px;height:30px;padding:0 8px;border:1px solid rgba(217,182,85,.4);background:transparent;color:#F0E2B4;font-family:Jost;font-size:12px;border-radius:5px;cursor:pointer}'+
+'#img-bar button:active{transform:translateY(1px)}'+
+'#img-bar .ib-sep{width:1px;height:20px;background:rgba(217,182,85,.35)}'+
+'#img-bar .ib-del{color:#ff9b8a;border-color:rgba(255,155,138,.5)}';
+document.head.appendChild(st);})();
+
+var newsFeed=(typeof newsFeed!=='undefined'&&Array.isArray(newsFeed))?newsFeed:[];
+function putNews(){if(!FS)return;M('news').set({data:newsFeed}).catch(function(){})}
+if(typeof window.ensureNewsBox!=='function'){
+  window.ensureNewsBox=function(){
+    var sec=$('#hall-news');
+    if(!sec){sec=document.createElement('div');sec.id='hall-news';sec.innerHTML='<div class="sec-h"><h2>Галактический Вестник</h2><span id="news-count"></span></div><div id="news-composer"></div><div id="news-feed"></div>';var th=$('#today2');var a=th?th.closest('.sec-h'):null;if(a&&a.parentNode){a.parentNode.insertBefore(sec,a)}else{var h=$('#s-hall');if(h)h.appendChild(sec)}}
+    else{var h2=sec.querySelector('.sec-h h2');if(h2)h2.textContent='Галактический Вестник';if(!$('#news-composer'))sec.insertAdjacentHTML('beforeend','<div id="news-composer"></div>');if(!$('#news-feed'))sec.insertAdjacentHTML('beforeend','<div id="news-feed"></div>')}
+  };
+}
+function pushNews(type,text,meta,extra){
+  if(!user)return;
+  var item={id:uid('N'),ts:Date.now(),author:user.name,rank:user.rank,type:type,text:text,meta:meta||''};
+  if(extra){for(var k in extra)item[k]=extra[k];}
+  newsFeed.unshift(item);newsFeed=newsFeed.slice(0,60);putNews();renderNews();
+}
+function canDeleteNews(n){return !!user&&(isMaster(user)||n.author===user.name)}
+function deleteNews(id){
+  var before=newsFeed.length;
+  newsFeed=newsFeed.filter(function(n){return n.id!==id});
+  if(newsFeed.length!==before){putNews();logCouncil('<b>'+esc(user.name)+'</b> удалил(а) запись из Вестника');renderNews();toast('Запись убрана из Вестника');}
+}
+function renderNews(){
+  ensureNewsBox();
+  var cc=$('#news-count');if(cc)cc.textContent=newsFeed.length+' записей';
+  var comp=$('#news-composer');
+  if(comp){
+    var canPost=!!(user&&ri(user.rank)>=2);
+    if(canPost&&!comp.querySelector('.news-composer')){
+      comp.innerHTML='<div class="news-composer"><p class="kicker">Публикация в Вестник</p><div class="rich" id="news-text" contenteditable="true" data-ph="Новость Ордена: объявления, события, открытия… (доступно от Падавана и выше)" style="margin-top:8px"></div><button class="btn small" id="news-send" style="margin-top:10px">Опубликовать</button></div>';
+      var ns=$('#news-send');
+      if(ns)ns.onclick=function(){var el=$('#news-text');var txt=el?el.innerText.trim():'';if(!txt){toast('Напиши текст новости');return}pushNews('news',txt,'');el.innerHTML='';toast('Новость опубликована в Вестнике ✦')};
+    }else if(!canPost){comp.innerHTML='';}
+  }
+  var box=$('#news-feed');if(!box)return;
+  box.innerHTML=newsFeed.length?newsFeed.slice(0,40).map(function(n){
+    var cls=n.type==='lesson-del'?'t-del':(n.type==='news'?'t-news':'');
+    var ico=n.type==='lesson-del'?'🗑':(n.type==='news'?'📰':'');
+    var canOpen=!!(n.lid&&n.type!=='lesson-del');
+    var del=canDeleteNews(n)?'<button class="iconbtn dng" data-delnews="'+esc(n.id||'')+'" title="Удалить запись" style="width:26px;height:26px;margin-left:6px"><svg style="width:14px;height:14px"><use href="#i-trash"/></svg></button>':'';
+    var open=canOpen?'<span class="nc-open">Открыть урок →</span>':'';
+    return '<div class="news-card rv '+cls+(canOpen?' clickable':'')+'"'+(n.lid?' data-lid="'+esc(n.lid)+'"':'')+'><div class="nc-head"><span style="font-size:16px">'+ico+'</span><b>'+esc(n.author||'—')+'</b><span class="tag rank">'+esc(n.rank||'')+'</span><span class="nc-time">'+timeAgo(n.ts||Date.now())+'</span>'+del+'</div><div class="nc-text">'+esc(n.text)+'</div>'+(n.meta?'<div class="nc-meta">'+esc(n.meta)+'</div>':'')+open+'</div>';
+  }).join(''):'<div class="news-card t-news"><div class="nc-text" style="color:var(--ink-2)">Вестник пока пуст: добавь урок — и запись прилетит сюда сама, либо опубликуй первую новость.</div></div>';
+  box.querySelectorAll('[data-delnews]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var id=b.dataset.delnews;confirmModal('Удалить эту запись из Вестника?',function(){deleteNews(id)})}});
+  box.querySelectorAll('.news-card[data-lid]').forEach(function(card){card.onclick=function(e){if(e.target.closest('[data-delnews]'))return;if(card.classList.contains('t-del'))return;var lid=card.dataset.lid;var f=findLesson(lid);if(!f){toast('Урок уже убран из учебника');return}TV={level:'lesson',yid:f.y.id,sid:f.s.id,cid:f.c.id,lid:lid};goto('lessons');}});
+  runReveals();
+}
+/* --- уроки: авто-записи Вестника теперь несут ссылку на урок --- */
+function editLesson(id,cid){
+  var create=!id,f=create?findChapter(cid):findLesson(id),l=create?{n:'',title:'',meta:'',body:''}:f.l;
+  if(!f)return;
+  openModal('<button class="x" data-x>×</button><h2>'+(create?'Новый урок':'Править урок')+'</h2><div class="field"><label>Обозначение (необяз.)</label><input id="el-n" type="text" value="'+esc(l.n||'')+'"></div><div class="field"><label>Название</label><input id="el-title" type="text" value="'+esc(l.title||'')+'"></div><div class="field"><label>Мета (формат / длительность)</label><input id="el-meta" type="text" value="'+esc(l.meta||'')+'"></div><div class="field"><label>Текст урока</label><div id="el-writer-mount" style="margin-top:8px"></div></div><div class="row2"><button class="btn ghost" data-x>Отмена</button><button class="btn" id="el-ok">'+(create?'Создать':'Сохранить')+'</button></div>');
+  var w=mountWriter($('#el-writer-mount'),'Напиши тело урока…',{});if(!create)setWriterHTML(w,l.body||'');
+  $('#el-ok').onclick=function(){
+    var title=$('#el-title').value.trim();if(!title)return;
+    var data={n:$('#el-n').value.trim(),title:title,meta:$('#el-meta').value.trim(),body:getWriterHTML(w)};
+    var where='Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title;
+    if(create){data.id=uid('L');f.c.lessons=f.c.lessons||[];f.c.lessons.push(data);logCouncil('<b>'+esc(user.name)+'</b> добавил(а) урок «'+esc(title)+'»');pushNews('lesson-add','Добавлен урок «'+title+'»',where,{lid:data.id});}
+    else{l.n=data.n;l.title=data.title;l.meta=data.meta;l.body=data.body;logCouncil('<b>'+esc(user.name)+'</b> отредактировал(а) урок «'+esc(title)+'»');pushNews('lesson-add','Обновлён урок «'+title+'»',where,{lid:l.id});}
+    closeModal();TV.level='lessons';if(create)TV.cid=cid;refreshAfterTree();
+  };
+}
+function delLesson(id){
+  var f=findLesson(id);if(!f)return;
+  confirmModal('Удалить урок «'+f.l.title+'»?',function(){
+    var lid=f.l.id;
+    f.c.lessons=f.c.lessons.filter(function(x){return x.id!==id});
+    logCouncil('<b>'+esc(user.name)+'</b> удалил(а) урок «'+esc(f.l.title)+'»');
+    pushNews('lesson-del','Убран урок «'+f.l.title+'»','Год '+f.y.year+' · '+(f.s.title||f.s.rank)+' · '+f.c.title,{lid:lid});
+    refreshAfterTree();
+  });
+}
+/* --- редактор фото: панель над экраном, всё сохраняется в тексте --- */
+var _imgTarget=null;
+function ensureImgBar(){
+  if($('#img-bar'))return $('#img-bar');
+  var bar=document.createElement('div');bar.id='img-bar';
+  bar.innerHTML='<button type="button" data-ib="minus" title="Меньше">−</button><button type="button" data-ib="plus" title="Больше">+</button><span class="ib-sep"></span><button type="button" data-ib="s" title="Маленький (30%)">S</button><button type="button" data-ib="m" title="Средний (60%)">M</button><button type="button" data-ib="l" title="Во всю ширину">L</button><span class="ib-sep"></span><button type="button" data-ib="rot" title="Повернуть на 90°">⟳</button><button type="button" data-ib="fx" title="Отразить по горизонтали">⇋</button><button type="button" data-ib="fy" title="Отразить по вертикали">⇵</button><span class="ib-sep"></span><button type="button" data-ib="reset" title="Как было">↺</button><button type="button" data-ib="del" class="ib-del" title="Удалить фото">✕</button>';
+  document.body.appendChild(bar);
+  bar.addEventListener('click',function(e){
+    var b=e.target.closest('[data-ib]');if(!b||!_imgTarget)return;
+    e.preventDefault();e.stopPropagation();
+    var act=b.dataset.ib;
+    var w=parseInt(_imgTarget.dataset.w||'100',10);
+    var rot=parseInt(_imgTarget.dataset.rot||'0',10);
+    var fx=_imgTarget.dataset.fx==='1',fy=_imgTarget.dataset.fy==='1';
+    if(act==='minus')w=Math.max(10,w-10);
+    if(act==='plus')w=Math.min(100,w+10);
+    if(act==='s')w=30;if(act==='m')w=60;if(act==='l')w=100;
+    if(act==='rot')rot=(rot+90)%360;
+    if(act==='fx')fx=!fx;
+    if(act==='fy')fy=!fy;
+    if(act==='reset'){w=100;rot=0;fx=false;fy=false;}
+    if(act==='del'){var t=_imgTarget;clearImgSel();if(t.parentNode)t.parentNode.removeChild(t);return;}
+    _imgTarget.dataset.w=String(w);_imgTarget.dataset.rot=String(rot);_imgTarget.dataset.fx=fx?'1':'0';_imgTarget.dataset.fy=fy?'1':'0';
+    applyImg(_imgTarget);
+  });
+  return bar;
+}
+function applyImg(img){
+  var w=parseInt(img.dataset.w||'100',10);
+  var rot=parseInt(img.dataset.rot||'0',10);
+  var fx=img.dataset.fx==='1',fy=img.dataset.fy==='1';
+  img.style.width=w+'%';img.style.maxWidth='100%';img.style.height='auto';
+  var tr='';
+  if(rot)tr+='rotate('+rot+'deg)';
+  if(fx)tr+=' scaleX(-1)';
+  if(fy)tr+=' scaleY(-1)';
+  img.style.transform=tr.trim();
+}
+function clearImgSel(){if(_imgTarget){_imgTarget.classList.remove('sel')}_imgTarget=null;var bar=$('#img-bar');if(bar)bar.classList.remove('show')}
+function selectImg(img){clearImgSel();_imgTarget=img;img.classList.add('sel');ensureImgBar().classList.add('show')}
+document.addEventListener('click',function(e){
+  if(!e.target||!e.target.closest)return;
+  var img=e.target.closest('.rich img');
+  if(img){selectImg(img);return}
+  if(e.target.closest('#img-bar'))return;
+  clearImgSel();
+},true);
+/* --- при сохранении текста служебная рамка выделения не попадает в урок --- */
+var _prevGWH=getWriterHTML;
+function getWriterHTML(w){
+  var h=_prevGWH(w);
+  var d=document.createElement('div');d.innerHTML=h;
+  d.querySelectorAll('img.sel').forEach(function(i){i.classList.remove('sel');if(!i.className)i.removeAttribute('class')});
+  return d.innerHTML;
+}
+ensureNewsBox();renderNews();
+</script>
 </html>
