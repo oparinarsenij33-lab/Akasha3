@@ -1587,4 +1587,35 @@ if(!window._newsSubDone){window._newsSubDone=true;if(FS){M('news').onSnapshot(fu
 if(!window._newsOpenWrap){window._newsOpenWrap=true;var _ob2=openApp;openApp=function(){_ob2.apply(this,arguments);ensureNewsBox();renderNews();};}
 </script>
 </body>
+<script>
+/* ===== ВЕСТНИК v3: удаление записей (автор или Мастер+) ===== */
+function canDeleteNews(n){return !!user&&(isMaster(user)||n.author===user.name)}
+function deleteNews(id){
+  var before=newsFeed.length;
+  newsFeed=newsFeed.filter(function(n){return n.id!==id});
+  if(newsFeed.length!==before){putNews();logCouncil('<b>'+esc(user.name)+'</b> удалил(а) запись из Вестника');renderNews();toast('Запись убрана из Вестника');}
+}
+function renderNews(){
+  ensureNewsBox();
+  var cc=$('#news-count');if(cc)cc.textContent=newsFeed.length+' записей';
+  var comp=$('#news-composer');
+  if(comp){
+    var canPost=!!(user&&ri(user.rank)>=2);
+    if(canPost&&!comp.querySelector('.news-composer')){
+      comp.innerHTML='<div class="news-composer"><p class="kicker">Публикация в Вестник</p><div class="rich" id="news-text" contenteditable="true" data-ph="Новость Ордена: объявления, события, открытия… (доступно от Падавана и выше)" style="margin-top:8px"></div><button class="btn small" id="news-send" style="margin-top:10px">Опубликовать</button></div>';
+      var ns=$('#news-send');
+      if(ns)ns.onclick=function(){var el=$('#news-text');var txt=el?el.innerText.trim():'';if(!txt){toast('Напиши текст новости');return}pushNews('news',txt,'');el.innerHTML='';toast('Новость опубликована в Вестнике ✦')};
+    }else if(!canPost){comp.innerHTML='';}
+  }
+  var box=$('#news-feed');if(!box)return;
+  box.innerHTML=newsFeed.length?newsFeed.slice(0,40).map(function(n){
+    var cls=n.type==='lesson-del'?'t-del':(n.type==='news'?'t-news':'');
+    var ico=n.type==='lesson-del'?'🗑':(n.type==='news'?'📰':'');
+    var del=canDeleteNews(n)?'<button class="iconbtn dng" data-delnews="'+esc(n.id||'')+'" title="Удалить запись" style="width:26px;height:26px;margin-left:6px"><svg style="width:14px;height:14px"><use href="#i-trash"/></svg></button>':'';
+    return '<div class="news-card rv '+cls+'"><div class="nc-head"><span style="font-size:16px">'+ico+'</span><b>'+esc(n.author||'—')+'</b><span class="tag rank">'+esc(n.rank||'')+'</span><span class="nc-time">'+timeAgo(n.ts||Date.now())+'</span>'+del+'</div><div class="nc-text">'+esc(n.text)+'</div>'+(n.meta?'<div class="nc-meta">'+esc(n.meta)+'</div>':'')+'</div>';
+  }).join(''):'<div class="news-card t-news"><div class="nc-text" style="color:var(--ink-2)">Вестник пока пуст: добавь урок — и запись прилетит сюда сама, либо опубликуй первую новость.</div></div>';
+  box.querySelectorAll('[data-delnews]').forEach(function(b){b.onclick=function(){var id=b.dataset.delnews;confirmModal('Удалить эту запись из Вестника?',function(){deleteNews(id)})}});
+  runReveals();
+}
+</script>
 </html>
