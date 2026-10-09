@@ -2109,4 +2109,71 @@ function addBook(editId){
   };
 }
 </script>
+<script>
+/* ===== ФИКС: убираем двойной рендер разделов/жанров (моргание) ===== */
+(function(){
+  /* Перехватываем putConfig: после сохранения НЕ вызываем renderLibrary вручную — подписка сама это сделает */
+  var _origPutConfig = window.putConfig;
+  window.putConfig = function(){
+    if(_origPutConfig) _origPutConfig();
+  };
+
+  /* Ждём, пока renderLibrary определится, и подменяем обработчики кнопок */
+  function fixLibButtons(){
+    var ac = $('#add-cat');
+    if(ac && !ac._fixed){
+      ac._fixed = true;
+      ac.onclick = function(){
+        var v = prompt('Название нового раздела библиотеки:');
+        if(!v || !v.trim()) return;
+        config.libCats = config.libCats || [];
+        config.libCats.push({id:uid('cat'), label:v.trim()});
+        putConfig();
+        /* НЕ вызываем renderLibrary() — подписка onSnapshot сама перерисует */
+        toast('Раздел добавлен ✦');
+      };
+    }
+    var ag = $('#add-genre');
+    if(ag && !ag._fixed){
+      ag._fixed = true;
+      ag.onclick = function(){
+        var v = prompt('Название нового жанра:');
+        if(!v || !v.trim()) return;
+        config.libGenres = config.libGenres || [];
+        if(config.libGenres.indexOf(v.trim()) < 0){
+          config.libGenres.push(v.trim());
+          putConfig();
+          toast('Жанр добавлен ✦');
+        } else {
+          toast('Такой жанр уже есть');
+        }
+      };
+    }
+    /* Кнопка удаления раздела тоже может вызывать двойной рендер */
+    $$('#lib-chips [data-delcat]').forEach(function(b){
+      if(!b._fixed){
+        b._fixed = true;
+        var old = b.onclick;
+        b.onclick = function(e){
+          e.stopPropagation();
+          confirmModal('Удалить раздел? (книги останутся)', function(){
+            config.libCats = (config.libCats||[]).filter(function(c){return c.id !== b.dataset.delcat});
+            if(libFilter === b.dataset.delcat) libFilter = 'all';
+            putConfig();
+            /* НЕ вызываем renderLibrary() — подписка сама */
+          });
+        };
+      }
+    });
+  }
+
+  /* Запускаем фикс сразу и после каждого рендера библиотеки */
+  var _origRenderLib = window.renderLibrary;
+  window.renderLibrary = function(){
+    if(_origRenderLib) _origRenderLib();
+    setTimeout(fixLibButtons, 50);
+  };
+  fixLibButtons();
+})();
+</script>
 </html>
